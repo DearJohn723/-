@@ -126,7 +126,29 @@ export default function App() {
     if (session?.user) {
       setUser(session.user);
       // Fetch profile from our user_profiles table
-      const profile = await databaseService.getUserProfile(session.user.id);
+      let profile = await databaseService.getUserProfile(session.user.id);
+      
+      if (!profile && session.user.email) {
+        // Try to find by email (for migrated users)
+        const existingProfile = await databaseService.getUserProfileByEmail(session.user.email);
+        if (existingProfile) {
+          // Link the old profile to the new Supabase UID
+          profile = {
+            ...existingProfile,
+            uid: session.user.id
+          };
+          await databaseService.createUserProfile(profile);
+          // Delete the old record if the ID changed
+          if (existingProfile.uid !== session.user.id) {
+            try {
+              await databaseService.deleteUserProfile(existingProfile.uid);
+            } catch (e) {
+              console.error("Failed to delete old profile:", e);
+            }
+          }
+        }
+      }
+
       if (profile) {
         setUserProfile(profile);
       } else {
@@ -811,7 +833,11 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
         if (error) throw error;
       }
     } catch (err: any) {
-      setError(err.message);
+      if (err.message === 'Invalid login credentials') {
+        setError('登录失败：账号或密码错误。如果您是旧版用户，请先点击下方的“去注册”创建一个新账号（密码不会从旧版迁移）。');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

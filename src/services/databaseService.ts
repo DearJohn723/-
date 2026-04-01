@@ -162,10 +162,36 @@ export const databaseService = {
       .from('user_profiles')
       .select('*')
       .eq('id', uid)
-      .single();
+      .maybeSingle();
     
     if (error) return null;
-    return data as UserProfile;
+    if (!data) return null;
+    return {
+      uid: data.id,
+      email: data.email,
+      displayName: data.display_name,
+      role: data.role,
+      createdAt: data.created_at
+    } as UserProfile;
+  },
+
+  async getUserProfileByEmail(email: string) {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+    
+    if (error) return null;
+    if (!data) return null;
+    return {
+      uid: data.id,
+      email: data.email,
+      displayName: data.display_name,
+      role: data.role,
+      createdAt: data.created_at
+    } as UserProfile;
   },
 
   async createUserProfile(profile: UserProfile) {
@@ -202,6 +228,16 @@ export const databaseService = {
     
     if (error) throw error;
     return data;
+  },
+
+  async deleteUserProfile(uid: string) {
+    if (!supabase) throw new Error('Supabase not configured');
+    const { error } = await supabase
+      .from('user_profiles')
+      .delete()
+      .eq('id', uid);
+    
+    if (error) throw error;
   },
 
   async getAllUserProfiles() {
