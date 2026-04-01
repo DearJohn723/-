@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the system with specific roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "role": { "type": "string", "enum": ["admin", "viewer"], "description": "User role" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A product in the database system",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Auto-generated Firestore ID" },
+        "productCode": { "type": "string", "description": "Unique product identifier" },
+        "name": { "type": "string", "description": "Product name" },
+        "subName": { "type": "string", "description": "Sub-product name" },
+        "category": { "type": "string", "description": "Product category" },
+        "description": { "type": "string", "description": "Detailed description" },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Searchable tags" },
+        "costPrice": { "type": "number", "description": "Cost price" },
+        "agentPrice": { "type": "number", "description": "Agent price" },
+        "domesticPrice": { "type": "number", "description": "Domestic selling price" },
+        "overseasPrice": { "type": "number", "description": "Overseas selling price" },
+        "stock": { "type": "number", "description": "Current stock quantity" },
+        "size": { "type": "string", "description": "Product size" },
+        "pieces": { "type": "number", "description": "Number of pieces" },
+        "color": { "type": "string", "description": "Product color" },
+        "releaseDate": { "type": "string", "description": "Release date" },
+        "monthlySales": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "yearMonth": { "type": "string" },
+              "quantity": { "type": "number" }
+            }
+          }
+        },
+        "photos": { "type": "array", "items": { "type": "string" }, "description": "List of photo URLs" },
+        "videos": { "type": "array", "items": { "type": "string" }, "description": "List of video URLs" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" },
+        "createdBy": { "type": "string", "description": "UID of the creator" }
+      },
+      "required": ["productCode", "name", "category", "costPrice", "stock"]
+    }
+  },
+  "firestore": {
+    "/users": {
+      "schema": "User",
+      "description": "Collection of all users and their roles"
+    },
+    "/products": {
+      "schema": "Product",
+      "description": "Collection of all products"
+    }
+  }
+}

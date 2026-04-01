@@ -1,0 +1,5 @@
+{
+  "name": "龙零产品数据库",
+  "description": "一个全面的产品管理系统，支持多媒体、高级过滤以及 CSV/Excel 导出功能。",
+  "requestFramePermissions": []
+}
