@@ -157,7 +157,7 @@ export default function App() {
           uid: session.user.id,
           email: session.user.email || '',
           displayName: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
-          role: session.user.email === 'john@greatidea.tw' ? 'admin' : 'viewer',
+          role: (session.user.email === 'john@greatidea.tw' || session.user.email === 'wesleytw723@gmail.com') ? 'admin' : 'viewer',
           createdAt: new Date().toISOString()
         };
         await databaseService.createUserProfile(newProfile);
