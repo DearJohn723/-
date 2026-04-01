@@ -307,6 +307,10 @@ export default function App() {
 
   const handleMigrateToSupabase = async () => {
     if (!isAdmin) return;
+    if (!supabase) {
+      alert('Supabase 尚未配置。請檢查 Vercel 中的環境變數 VITE_SUPABASE_URL 和 VITE_SUPABASE_ANON_KEY。');
+      return;
+    }
     if (!confirm('确定要将所有 Firebase 数据迁移到 Supabase 吗？这可能会覆盖现有数据。')) return;
 
     setIsMigrating(true);
@@ -314,8 +318,15 @@ export default function App() {
       // 1. Migrate Users
       const usersSnapshot = await getDocs(collection(db, 'users'));
       for (const userDoc of usersSnapshot.docs) {
-        const userData = userDoc.data() as UserProfile;
-        await databaseService.createUserProfile(userData);
+        const userData = userDoc.data() as any;
+        const createdAt = userData.createdAt instanceof Timestamp ? userData.createdAt.toDate() : new Date();
+        
+        const profile: UserProfile = {
+          ...userData,
+          uid: userDoc.id,
+          createdAt
+        };
+        await databaseService.createUserProfile(profile);
       }
 
       // 2. Migrate Products
@@ -338,9 +349,10 @@ export default function App() {
       }
 
       alert('数据迁移成功！');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Migration Error:', error);
-      alert('迁移失败，请检查控制台日志。');
+      const errorMsg = error.message || JSON.stringify(error);
+      alert(`迁移失败：${errorMsg}`);
     } finally {
       setIsMigrating(false);
     }
