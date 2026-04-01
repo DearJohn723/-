@@ -669,6 +669,13 @@ function ExportModal({ onClose, onExport }: { onClose: () => void, onExport: (fo
             取消
           </button>
           <button
+            onClick={() => onExport('csv', selectedColumns)}
+            disabled={selectedColumns.length === 0}
+            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
+          >
+            导出 CSV
+          </button>
+          <button
             onClick={() => onExport('xlsx', selectedColumns)}
             disabled={selectedColumns.length === 0}
             className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-50"

@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 龙零产品数据库 (Long Ling Product Database)
 
-# Run and deploy your AI Studio app
+这是一个基于 React + Firebase 的全功能产品管理系统。
 
-This contains everything you need to run your app locally.
+## 功能特点
 
-View your app in AI Studio: https://ai.studio/apps/efca9cfd-1b20-472b-855c-5f044c16123a
+- **产品管理**：支持新增、编辑、删除、复制产品。
+- **子产品支持**：每个产品可设置可选的子产品名称。
+- **唯一编号**：自动校验产品编号的唯一性。
+- **多级权限**：支持管理员 (Admin) 和 浏览者 (Viewer) 角色。
+- **汇率转换**：实时获取 USD 到 CNY 的汇率，自动计算海外售价。
+- **导出功能**：支持自定义栏位导出 Excel 或 CSV。
+- **用户管理**：管理员可直接在系统内创建和管理其他用户。
 
-## Run Locally
+## 部署说明 (GitHub Pages)
 
-**Prerequisites:**  Node.js
+本项目已配置 GitHub Actions 自动部署。
 
+### 1. 推送代码
+将代码推送到 GitHub 仓库的 `main` 分支。
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 2. 开启 Pages 服务
+1. 进入 GitHub 仓库设置 (**Settings**)。
+2. 点击左侧菜单的 **Pages**。
+3. 在 **Build and deployment** > **Branch** 下，选择 `gh-pages` 分支，并点击 **Save**。
+
+### 3. Firebase 配置
+应用会自动读取根目录下的 `firebase-applet-config.json`。请确保该文件包含正确的 Firebase 配置。
+
+## 开发
+
+```bash
+npm install
+npm run dev
+```
+
+## 构建
+
+```bash
+npm run build
+```
