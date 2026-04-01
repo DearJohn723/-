@@ -172,7 +172,7 @@ export default function App() {
 
   const handleLogin = async () => {
     if (!supabase) {
-      alert('Supabase 尚未配置。');
+      alert('Supabase 尚未配置。請在 AI Studio 的「Settings」選單中設定 VITE_SUPABASE_URL 和 VITE_SUPABASE_ANON_KEY。');
       return;
     }
     try {
