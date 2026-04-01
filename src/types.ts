@@ -10,7 +10,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   role: 'admin' | 'viewer';
-  createdAt: Timestamp;
+  createdAt: string | Date;
 }
 
 export interface Product {
@@ -33,7 +33,7 @@ export interface Product {
   monthlySales: MonthlySale[];
   photos: string[];
   videos: string[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: string | Date;
+  updatedAt: string | Date;
   createdBy: string;
 }

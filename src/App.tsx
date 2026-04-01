@@ -17,6 +17,8 @@ import {
 } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { db, auth, signIn, logOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from './firebase';
+import { supabase } from './supabase';
+import { databaseService } from './services/databaseService';
 import { Product, MonthlySale, UserProfile } from './types';
 import { cn } from './lib/utils';
 import { 
@@ -89,6 +91,7 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('全部');
@@ -164,18 +167,29 @@ export default function App() {
       return;
     }
 
-    const q = query(collection(db, 'products'), orderBy('updatedAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const productData: Product[] = [];
-      snapshot.forEach((doc) => {
-        productData.push({ id: doc.id, ...doc.data() } as Product);
-      });
-      setProducts(productData);
-    }, (error) => {
-      console.error("Firestore Error: ", error);
-    });
+    const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-    return () => unsubscribe();
+    if (isSupabaseConfigured) {
+      // Supabase Realtime
+      databaseService.getProducts().then(setProducts).catch(console.error);
+      const unsubscribe = databaseService.subscribeToProducts(setProducts);
+      return () => {
+        unsubscribe.then(unsub => unsub());
+      };
+    } else {
+      // Firebase Realtime
+      const q = query(collection(db, 'products'), orderBy('updatedAt', 'desc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const productData: Product[] = [];
+        snapshot.forEach((doc) => {
+          productData.push({ id: doc.id, ...doc.data() } as Product);
+        });
+        setProducts(productData);
+      }, (error) => {
+        console.error("Firestore Error: ", error);
+      });
+      return () => unsubscribe();
+    }
   }, [user]);
 
   const dynamicCategories = useMemo(() => {
@@ -291,6 +305,62 @@ export default function App() {
     setIsModalOpen(true);
   };
 
+  const handleMigrateToSupabase = async () => {
+    if (!isAdmin) return;
+    if (!confirm('确定要将所有 Firebase 数据迁移到 Supabase 吗？这可能会覆盖现有数据。')) return;
+
+    setIsMigrating(true);
+    try {
+      // 1. Migrate Users
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data() as UserProfile;
+        await databaseService.createUserProfile(userData);
+      }
+
+      // 2. Migrate Products
+      const productsSnapshot = await getDocs(collection(db, 'products'));
+      for (const productDoc of productsSnapshot.docs) {
+        const productData = productDoc.data() as any;
+        const { id, createdAt, updatedAt, ...rest } = productData;
+        
+        // Convert Firebase Timestamp to ISO string for Supabase
+        const formattedProduct = {
+          ...rest,
+          created_by: productData.createdBy,
+          monthly_sales: productData.monthlySales || [],
+          photos: productData.photos || [],
+          videos: productData.videos || [],
+          product_code: productData.productCode,
+          sub_name: productData.subName,
+          cost_price: productData.costPrice,
+          agent_price: productData.agentPrice,
+          domestic_price: productData.domesticPrice,
+          overseas_price: productData.overseasPrice,
+        };
+        
+        // Remove camelCase fields that are now snake_case in Supabase
+        delete formattedProduct.productCode;
+        delete formattedProduct.subName;
+        delete formattedProduct.costPrice;
+        delete formattedProduct.agentPrice;
+        delete formattedProduct.domesticPrice;
+        delete formattedProduct.overseasPrice;
+        delete formattedProduct.monthlySales;
+        delete formattedProduct.createdBy;
+
+        await databaseService.addProduct(formattedProduct);
+      }
+
+      alert('数据迁移成功！');
+    } catch (error) {
+      console.error('Migration Error:', error);
+      alert('迁移失败，请检查控制台日志。');
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -329,6 +399,16 @@ export default function App() {
               <LayoutDashboard className="w-4 h-4" />
               产品管理
             </button>
+            {isAdmin && (
+              <button
+                onClick={handleMigrateToSupabase}
+                disabled={isMigrating}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded-lg transition-all border border-amber-200"
+              >
+                {isMigrating ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
+                迁移至 Supabase
+              </button>
+            )}
             {isAdmin && (
               <button
                 onClick={() => setActiveTab('users')}
