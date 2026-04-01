@@ -33,7 +33,8 @@ import {
   Mail,
   Lock,
   User as UserIcon,
-  LayoutDashboard
+  LayoutDashboard,
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -72,6 +73,7 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
@@ -208,7 +210,12 @@ export default function App() {
     }
 
     // Supabase Realtime
-    databaseService.getProducts().then(setProducts).catch(console.error);
+    databaseService.getProducts()
+      .then(setProducts)
+      .catch(err => {
+        console.error(err);
+        setError("無法載入商品清單。這通常是因為 Supabase 的 RLS 策略發生了無限遞迴錯誤。請檢查您的資料庫策略。");
+      });
     const unsubscribe = databaseService.subscribeToProducts(setProducts);
     return () => {
       unsubscribe.then(unsub => unsub());
@@ -482,6 +489,16 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5" />
+            <div className="flex-1">
+              <p className="font-semibold">資料載入錯誤</p>
+              <p className="text-sm">{error}</p>
+              <p className="text-xs mt-1 opacity-80">解決方法：這通常是因為 Supabase 的 RLS 策略發生了無限遞迴。請前往 Supabase SQL Editor 檢查 user_profiles 表的策略，確保沒有在策略中直接查詢該表本身。</p>
+            </div>
+          </div>
+        )}
         {activeTab === 'products' ? (
           <>
             {/* Controls */}
@@ -1161,7 +1178,7 @@ function UserManagementView() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-400">
-                    {u.createdAt?.toDate().toLocaleDateString()}
+                    {u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString() : new Date(u.createdAt).toLocaleDateString()) : 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <select
