@@ -1,25 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  collection, 
-  query, 
-  onSnapshot, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  setDoc,
-  getDocs,
-  where,
-  Timestamp, 
-  orderBy,
-  getDocFromServer,
-  getDoc
-} from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { db, auth, signIn, logOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from './firebase';
 import { supabase } from './supabase';
 import { databaseService } from './services/databaseService';
 import { Product, MonthlySale, UserProfile } from './types';
+import { Session } from '@supabase/supabase-js';
 import { cn } from './lib/utils';
 import { 
   Plus, 
@@ -85,7 +68,7 @@ const productSchema = z.object({
 type ProductFormData = z.infer<typeof productSchema>;
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
@@ -119,46 +102,81 @@ export default function App() {
 
   // Auth listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        // Fetch user profile for role
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfile);
-        } else {
-          // If first time login (e.g. Google), create a default profile
-          const defaultProfile: UserProfile = {
-            uid: user.uid,
-            email: user.email || '',
-            displayName: user.displayName || '新用户',
-            role: user.email === 'john@greatidea.tw' ? 'admin' : 'viewer',
-            createdAt: Timestamp.now()
-          };
-          await setDoc(doc(db, 'users', user.uid), defaultProfile);
-          setUserProfile(defaultProfile);
-        }
-      } else {
-        setUserProfile(null);
-      }
+    if (!supabase) {
       setLoading(false);
+      return;
+    }
+
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleAuthChange(session);
     });
-    return () => unsubscribe();
+
+    // 2. Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        handleAuthChange(session);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Firestore connection test
-  useEffect(() => {
-    async function testConnection() {
-      try {
-        await getDocFromServer(doc(db, 'test', 'connection'));
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration.");
-        }
+  const handleAuthChange = async (session: Session | null) => {
+    if (session?.user) {
+      setUser(session.user);
+      // Fetch profile from our user_profiles table
+      const profile = await databaseService.getUserProfile(session.user.id);
+      if (profile) {
+        setUserProfile(profile);
+      } else {
+        // Auto-create profile for new Supabase users
+        const newProfile: UserProfile = {
+          uid: session.user.id,
+          email: session.user.email || '',
+          displayName: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
+          role: session.user.email === 'john@greatidea.tw' ? 'admin' : 'viewer',
+          createdAt: new Date().toISOString()
+        };
+        await databaseService.createUserProfile(newProfile);
+        setUserProfile(newProfile);
       }
+    } else {
+      setUser(null);
+      setUserProfile(null);
     }
-    testConnection();
-  }, []);
+    setLoading(false);
+  };
+
+  const handleLogin = async () => {
+    if (!supabase) {
+      alert('Supabase 尚未配置。');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      console.error("Login Error: ", error);
+      alert(`登入失敗：${error.message}`);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!supabase) return;
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Logout Error: ", error);
+    }
+  };
+
+
 
   // Products listener
   useEffect(() => {
@@ -167,29 +185,12 @@ export default function App() {
       return;
     }
 
-    const isSupabaseConfigured = !!(import.meta as any).env.VITE_SUPABASE_URL && !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY;
-
-    if (isSupabaseConfigured) {
-      // Supabase Realtime
-      databaseService.getProducts().then(setProducts).catch(console.error);
-      const unsubscribe = databaseService.subscribeToProducts(setProducts);
-      return () => {
-        unsubscribe.then(unsub => unsub());
-      };
-    } else {
-      // Firebase Realtime
-      const q = query(collection(db, 'products'), orderBy('updatedAt', 'desc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const productData: Product[] = [];
-        snapshot.forEach((doc) => {
-          productData.push({ id: doc.id, ...doc.data() } as Product);
-        });
-        setProducts(productData);
-      }, (error) => {
-        console.error("Firestore Error: ", error);
-      });
-      return () => unsubscribe();
-    }
+    // Supabase Realtime
+    databaseService.getProducts().then(setProducts).catch(console.error);
+    const unsubscribe = databaseService.subscribeToProducts(setProducts);
+    return () => {
+      unsubscribe.then(unsub => unsub());
+    };
   }, [user]);
 
   const dynamicCategories = useMemo(() => {
@@ -221,8 +222,11 @@ export default function App() {
         const valA = a[sortBy];
         const valB = b[sortBy];
         
-        if (valA instanceof Timestamp && valB instanceof Timestamp) {
-          return sortOrder === 'asc' ? valA.toMillis() - valB.toMillis() : valB.toMillis() - valA.toMillis();
+        // Handle dates
+        if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
+          const dateA = valA?.toDate ? valA.toDate().getTime() : new Date(valA).getTime();
+          const dateB = valB?.toDate ? valB.toDate().getTime() : new Date(valB).getTime();
+          return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
         }
         
         if (typeof valA === 'string' && typeof valB === 'string') {
@@ -258,7 +262,10 @@ export default function App() {
       if (selectedColumns.includes('总销量')) row['总销量'] = calculateTotalSales(p.monthlySales);
       if (selectedColumns.includes('图片链接')) row['图片链接'] = p.photos.join('; ');
       if (selectedColumns.includes('视频链接')) row['视频链接'] = p.videos.join('; ');
-      if (selectedColumns.includes('建立时间')) row['建立时间'] = p.createdAt.toDate().toLocaleString();
+      if (selectedColumns.includes('建立时间')) {
+        const date = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
+        row['建立时间'] = date.toLocaleString();
+      }
       return row;
     });
 
@@ -281,9 +288,10 @@ export default function App() {
   const handleDelete = async (id: string) => {
     if (confirm('确定要删除此产品吗？')) {
       try {
-        await deleteDoc(doc(db, 'products', id));
+        await databaseService.deleteProduct(id);
       } catch (error) {
         console.error("Delete Error: ", error);
+        alert('删除失败');
       }
     }
   };
@@ -315,6 +323,9 @@ export default function App() {
 
     setIsMigrating(true);
     try {
+      const { getDocs, collection, Timestamp } = await import('firebase/firestore');
+      const { db } = await import('./firebase');
+
       // 1. Migrate Users
       const usersSnapshot = await getDocs(collection(db, 'users'));
       for (const userDoc of usersSnapshot.docs) {
@@ -367,7 +378,7 @@ export default function App() {
   }
 
   if (!user) {
-    return <LoginView />;
+    return <LoginView onLogin={handleLogin} />;
   }
 
   const isAdmin = userProfile?.role === 'admin';
@@ -422,15 +433,15 @@ export default function App() {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 mr-4">
-              {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName || ''} className="w-8 h-8 rounded-full border border-gray-200" />
+              {user.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} alt={userProfile?.displayName || ''} className="w-8 h-8 rounded-full border border-gray-200" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-                  {user.displayName?.charAt(0) || user.email?.charAt(0)}
+                  {userProfile?.displayName?.charAt(0) || user.email?.charAt(0)}
                 </div>
               )}
               <div className="hidden md:flex flex-col">
-                <span className="text-sm font-medium leading-none">{user.displayName || user.email?.split('@')[0]}</span>
+                <span className="text-sm font-medium leading-none">{userProfile?.displayName || user.email?.split('@')[0]}</span>
                 <span className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
                   <Shield className="w-2 h-2" />
                   {userProfile?.role === 'admin' ? '超级管理员' : '浏览者'}
@@ -438,7 +449,7 @@ export default function App() {
               </div>
             </div>
             <button
-              onClick={logOut}
+              onClick={handleLogout}
               className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               title="登出"
             >
@@ -765,7 +776,7 @@ function ExportModal({ onClose, onExport }: { onClose: () => void, onExport: (fo
   );
 }
 
-function LoginView() {
+function LoginView({ onLogin }: { onLogin: () => void }) {
   const [isEmailLogin, setIsEmailLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -776,15 +787,28 @@ function LoginView() {
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabase) return;
     setError('');
     setLoading(true);
     try {
       if (isRegistering) {
-        const res = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(res.user, { displayName });
-        // Profile creation is handled by the useEffect in App
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: displayName
+            }
+          }
+        });
+        if (error) throw error;
+        alert('注册成功！請檢查郵箱驗證（如果啟用了驗證）。');
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) throw error;
       }
     } catch (err: any) {
       setError(err.message);
@@ -883,7 +907,7 @@ function LoginView() {
         ) : (
           <div className="space-y-3">
             <button
-              onClick={signIn}
+              onClick={onLogin}
               className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all shadow-sm"
             >
               <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
@@ -915,16 +939,17 @@ function UserManagementView() {
   const [addLoading, setAddLoading] = useState(false);
 
   useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const userData: UserProfile[] = [];
-      snapshot.forEach((doc) => {
-        userData.push(doc.data() as UserProfile);
-      });
-      setUsers(userData);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    const fetchUsers = async () => {
+      try {
+        const data = await databaseService.getAllUserProfiles();
+        setUsers(data);
+      } catch (err) {
+        console.error("Fetch Users Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
   }, []);
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -932,54 +957,60 @@ function UserManagementView() {
     setAddError('');
     setAddLoading(true);
 
-    // To create a user without logging out the current admin, we'd ideally use Firebase Admin SDK.
-    // Since we are in a client-side context, we'll use a secondary Firebase app instance.
-    const { initializeApp, deleteApp } = await import('firebase/app');
-    const { getAuth, createUserWithEmailAndPassword, signOut } = await import('firebase/auth');
-    const firebaseConfig = (await import('../firebase-applet-config.json')).default;
-
-    const secondaryAppName = `Secondary-${Date.now()}`;
-    let secondaryApp;
     try {
-      secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
-      const secondaryAuth = getAuth(secondaryApp);
+      if (!supabase) throw new Error('Supabase not configured');
       
-      const res = await createUserWithEmailAndPassword(secondaryAuth, newEmail, newPassword);
-      
-      // Create user profile in Firestore
+      const { data, error } = await supabase.auth.signUp({
+        email: newEmail,
+        password: newPassword,
+        options: {
+          data: {
+            display_name: newDisplayName,
+          }
+        }
+      });
+
+      if (error) throw error;
+      if (!data.user) throw new Error('User creation failed');
+
+      // Create user profile in Supabase
       const newUserProfile: UserProfile = {
-        uid: res.user.uid,
+        uid: data.user.id,
         email: newEmail,
         displayName: newDisplayName,
         role: newRole,
-        createdAt: Timestamp.now()
+        createdAt: new Date().toISOString()
       };
       
-      await setDoc(doc(db, 'users', res.user.uid), newUserProfile);
+      await databaseService.createUserProfile(newUserProfile);
       
-      // Clean up secondary app
-      await signOut(secondaryAuth);
+      alert('用户已创建。请注意，Supabase 可能会自动登录新用户，您可能需要重新登录管理员账号。');
       
       setIsAddingUser(false);
       setNewEmail('');
       setNewPassword('');
       setNewDisplayName('');
       setNewRole('viewer');
+      
+      // Refresh list
+      const updatedUsers = await databaseService.getAllUserProfiles();
+      setUsers(updatedUsers);
     } catch (err: any) {
       setAddError(err.message);
     } finally {
-      if (secondaryApp) {
-        await deleteApp(secondaryApp);
-      }
       setAddLoading(false);
     }
   };
 
   const updateRole = async (uid: string, newRole: 'admin' | 'viewer') => {
     try {
-      await updateDoc(doc(db, 'users', uid), { role: newRole });
+      await databaseService.updateUserProfile(uid, { role: newRole });
+      // Refresh list
+      const updatedUsers = await databaseService.getAllUserProfiles();
+      setUsers(updatedUsers);
     } catch (err) {
       console.error("Update Role Error:", err);
+      alert('更新角色失败');
     }
   };
 
@@ -1137,7 +1168,7 @@ function ProductModal({
 }: { 
   product: Product | null, 
   onClose: () => void, 
-  user: User,
+  user: UserProfile,
   categories: string[],
   existingTags: string[],
   exchangeRate: number
@@ -1190,11 +1221,9 @@ function ProductModal({
     setIsSubmitting(true);
     try {
       // Unique productCode check
-      const q = query(collection(db, 'products'), where('productCode', '==', data.productCode));
-      const querySnapshot = await getDocs(q);
+      const isUnique = await databaseService.checkProductCodeUnique(data.productCode, product?.id);
       
-      const isDuplicate = querySnapshot.docs.some(doc => doc.id !== product?.id);
-      if (isDuplicate) {
+      if (!isUnique) {
         alert('产品编号已存在，请使用唯一编号。');
         setIsSubmitting(false);
         return;
@@ -1204,26 +1233,29 @@ function ProductModal({
       const photos = data.photos?.map(p => p.url) || [];
       const videos = data.videos?.map(v => v.url) || [];
 
-      const productData = {
-        ...data,
-        tags,
-        photos,
-        videos,
-        updatedAt: Timestamp.now(),
-      };
-
       if (product && product.id) {
-        await updateDoc(doc(db, 'products', product.id), productData);
-      } else {
-        await addDoc(collection(db, 'products'), {
-          ...productData,
-          createdAt: Timestamp.now(),
-          createdBy: user.uid,
+        await databaseService.updateProduct(product.id, {
+          ...data,
+          tags,
+          photos,
+          videos,
         });
+      } else {
+        await databaseService.addProduct({
+          ...data,
+          id: crypto.randomUUID(),
+          tags,
+          photos,
+          videos,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          createdBy: user.uid,
+        } as Product);
       }
       onClose();
     } catch (error) {
       console.error("Submit Error: ", error);
+      alert('提交失败，请检查控制台。');
     } finally {
       setIsSubmitting(false);
     }

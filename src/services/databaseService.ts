@@ -134,6 +134,22 @@ export const databaseService = {
     if (error) throw error;
   },
 
+  async checkProductCodeUnique(productCode: string, excludeId?: string) {
+    if (!supabase) return true;
+    let query = supabase
+      .from('products')
+      .select('id')
+      .eq('product_code', productCode);
+    
+    if (excludeId) {
+      query = query.neq('id', excludeId);
+    }
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    return data.length === 0;
+  },
+
   // Users
   async getUserProfile(uid: string) {
     if (!supabase) return null;
@@ -163,5 +179,40 @@ export const databaseService = {
     
     if (error) throw error;
     return data;
+  },
+
+  async updateUserProfile(uid: string, profile: Partial<UserProfile>) {
+    if (!supabase) throw new Error('Supabase not configured');
+    const updates: any = {};
+    if (profile.displayName) updates.display_name = profile.displayName;
+    if (profile.role) updates.role = profile.role;
+    if (profile.email) updates.email = profile.email;
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(updates)
+      .eq('id', uid)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async getAllUserProfiles() {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return (data as any[]).map(u => ({
+      uid: u.id,
+      email: u.email,
+      displayName: u.display_name,
+      role: u.role,
+      createdAt: u.created_at
+    })) as UserProfile[];
   }
 };
