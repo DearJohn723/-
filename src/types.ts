@@ -10,7 +10,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   role: 'admin' | 'viewer';
-  createdAt: string | Date;
+  createdAt: any; // Flexible for Timestamp or ISO string
 }
 
 export interface Product {
@@ -24,6 +24,7 @@ export interface Product {
   costPrice: number;
   agentPrice: number;
   domesticPrice: number;
+  overseas_price?: number; // Handle snake_case from DB if needed
   overseasPrice: number;
   stock: number;
   size: string;
@@ -33,7 +34,7 @@ export interface Product {
   monthlySales: MonthlySale[];
   photos: string[];
   videos: string[];
-  createdAt: string | Date;
-  updatedAt: string | Date;
+  createdAt: any;
+  updatedAt: any;
   createdBy: string;
 }

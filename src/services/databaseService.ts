@@ -4,6 +4,7 @@ import { Product, UserProfile } from '../types';
 export const databaseService = {
   // Products
   async getProducts() {
+    if (!supabase) return [];
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -38,6 +39,7 @@ export const databaseService = {
   },
 
   async subscribeToProducts(callback: (products: Product[]) => void) {
+    if (!supabase) return () => {};
     const subscription = supabase
       .channel('public:products')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
@@ -52,6 +54,7 @@ export const databaseService = {
   },
 
   async addProduct(product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) {
+    if (!supabase) throw new Error('Supabase not configured');
     const formattedProduct = {
       product_code: product.productCode,
       name: product.name,
@@ -85,6 +88,7 @@ export const databaseService = {
   },
 
   async updateProduct(id: string, product: Partial<Product>) {
+    if (!supabase) throw new Error('Supabase not configured');
     const formattedProduct: any = {};
     if (product.productCode) formattedProduct.product_code = product.productCode;
     if (product.name) formattedProduct.name = product.name;
@@ -117,6 +121,7 @@ export const databaseService = {
   },
 
   async deleteProduct(id: string) {
+    if (!supabase) throw new Error('Supabase not configured');
     const { error } = await supabase
       .from('products')
       .delete()
@@ -127,6 +132,7 @@ export const databaseService = {
 
   // Users
   async getUserProfile(uid: string) {
+    if (!supabase) return null;
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -138,6 +144,7 @@ export const databaseService = {
   },
 
   async createUserProfile(profile: UserProfile) {
+    if (!supabase) throw new Error('Supabase not configured');
     const { data, error } = await supabase
       .from('user_profiles')
       .insert([{
