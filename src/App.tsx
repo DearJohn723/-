@@ -34,6 +34,7 @@ import {
   Lock,
   User as UserIcon,
   LayoutDashboard,
+  RefreshCw,
   AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -74,6 +75,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
@@ -202,6 +204,20 @@ export default function App() {
 
 
 
+  const fetchProducts = async () => {
+    setIsRefreshing(true);
+    setError(null);
+    try {
+      const data = await databaseService.getProducts();
+      setProducts(data);
+    } catch (err) {
+      console.error(err);
+      setError("無法載入商品清單。這通常是因為 Supabase 的 RLS 策略發生了無限遞迴錯誤。請檢查您的資料庫策略。");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Products listener
   useEffect(() => {
     if (!user) {
@@ -209,14 +225,14 @@ export default function App() {
       return;
     }
 
+    // Initial fetch
+    fetchProducts();
+
     // Supabase Realtime
-    databaseService.getProducts()
-      .then(setProducts)
-      .catch(err => {
-        console.error(err);
-        setError("無法載入商品清單。這通常是因為 Supabase 的 RLS 策略發生了無限遞迴錯誤。請檢查您的資料庫策略。");
-      });
-    const unsubscribe = databaseService.subscribeToProducts(setProducts);
+    const unsubscribe = databaseService.subscribeToProducts((updatedProducts) => {
+      setProducts(updatedProducts);
+    });
+
     return () => {
       unsubscribe.then(unsub => unsub());
     };
@@ -514,6 +530,15 @@ export default function App() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
+                
+                <button
+                  onClick={fetchProducts}
+                  disabled={isRefreshing}
+                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all disabled:opacity-50"
+                  title="重新整理"
+                >
+                  <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
+                </button>
                 <div className="relative">
                   <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <select
