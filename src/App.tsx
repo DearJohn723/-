@@ -322,34 +322,19 @@ export default function App() {
       const productsSnapshot = await getDocs(collection(db, 'products'));
       for (const productDoc of productsSnapshot.docs) {
         const productData = productDoc.data() as any;
-        const { id, createdAt, updatedAt, ...rest } = productData;
         
-        // Convert Firebase Timestamp to ISO string for Supabase
-        const formattedProduct = {
-          ...rest,
-          created_by: productData.createdBy,
-          monthly_sales: productData.monthlySales || [],
-          photos: productData.photos || [],
-          videos: productData.videos || [],
-          product_code: productData.productCode,
-          sub_name: productData.subName,
-          cost_price: productData.costPrice,
-          agent_price: productData.agentPrice,
-          domestic_price: productData.domesticPrice,
-          overseas_price: productData.overseasPrice,
-        };
-        
-        // Remove camelCase fields that are now snake_case in Supabase
-        delete formattedProduct.productCode;
-        delete formattedProduct.subName;
-        delete formattedProduct.costPrice;
-        delete formattedProduct.agentPrice;
-        delete formattedProduct.domesticPrice;
-        delete formattedProduct.overseasPrice;
-        delete formattedProduct.monthlySales;
-        delete formattedProduct.createdBy;
+        // Convert Firebase Timestamps to string/Date
+        const createdAt = productData.createdAt instanceof Timestamp ? productData.createdAt.toDate() : new Date();
+        const updatedAt = productData.updatedAt instanceof Timestamp ? productData.updatedAt.toDate() : new Date();
 
-        await databaseService.addProduct(formattedProduct);
+        const product: Product = {
+          ...productData,
+          id: productDoc.id,
+          createdAt,
+          updatedAt,
+        };
+
+        await databaseService.addProduct(product);
       }
 
       alert('数据迁移成功！');

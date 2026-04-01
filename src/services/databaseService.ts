@@ -53,9 +53,10 @@ export const databaseService = {
     };
   },
 
-  async addProduct(product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) {
+  async addProduct(product: Product) {
     if (!supabase) throw new Error('Supabase not configured');
     const formattedProduct = {
+      id: product.id,
       product_code: product.productCode,
       name: product.name,
       sub_name: product.subName,
@@ -74,12 +75,14 @@ export const databaseService = {
       monthly_sales: product.monthlySales,
       photos: product.photos,
       videos: product.videos,
-      created_by: product.createdBy
+      created_by: product.createdBy,
+      created_at: product.createdAt instanceof Date ? product.createdAt.toISOString() : product.createdAt,
+      updated_at: product.updatedAt instanceof Date ? product.updatedAt.toISOString() : product.updatedAt
     };
 
     const { data, error } = await supabase
       .from('products')
-      .insert([formattedProduct])
+      .upsert([formattedProduct])
       .select()
       .single();
     
@@ -108,6 +111,7 @@ export const databaseService = {
     if (product.monthlySales) formattedProduct.monthly_sales = product.monthlySales;
     if (product.photos) formattedProduct.photos = product.photos;
     if (product.videos) formattedProduct.videos = product.videos;
+    formattedProduct.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
       .from('products')
@@ -147,11 +151,12 @@ export const databaseService = {
     if (!supabase) throw new Error('Supabase not configured');
     const { data, error } = await supabase
       .from('user_profiles')
-      .insert([{
+      .upsert([{
         id: profile.uid,
         email: profile.email,
         display_name: profile.displayName,
-        role: profile.role
+        role: profile.role,
+        created_at: profile.createdAt instanceof Date ? profile.createdAt.toISOString() : profile.createdAt
       }])
       .select()
       .single();
