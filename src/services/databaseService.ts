@@ -10,31 +10,36 @@ export const databaseService = {
       .select('*')
       .order('updated_at', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase getProducts Error:", error);
+      throw error;
+    }
+    
+    if (!data) return [];
     
     return (data as any[]).map(p => ({
       id: p.id,
-      productCode: p.product_code,
-      name: p.name,
-      subName: p.sub_name,
-      category: p.category,
-      description: p.description,
-      tags: p.tags,
-      costPrice: Number(p.cost_price),
-      agentPrice: Number(p.agent_price),
-      domesticPrice: Number(p.domestic_price),
-      overseasPrice: Number(p.overseas_price),
-      stock: p.stock,
-      size: p.size,
-      pieces: p.pieces,
-      color: p.color,
-      releaseDate: p.release_date,
-      monthlySales: p.monthly_sales,
-      photos: p.photos,
-      videos: p.videos,
-      createdAt: p.created_at,
-      updatedAt: p.updated_at,
-      createdBy: p.created_by
+      productCode: p.product_code || '',
+      name: p.name || '',
+      subName: p.sub_name || '',
+      category: p.category || '未分類',
+      description: p.description || '',
+      tags: p.tags || [],
+      costPrice: Number(p.cost_price || 0),
+      agentPrice: Number(p.agent_price || 0),
+      domesticPrice: Number(p.domestic_price || 0),
+      overseasPrice: Number(p.overseas_price || 0),
+      stock: p.stock || 0,
+      size: p.size || '',
+      pieces: p.pieces || 0,
+      color: p.color || '',
+      releaseDate: p.release_date || '',
+      monthlySales: p.monthly_sales || [],
+      photos: p.photos || [],
+      videos: p.videos || [],
+      createdAt: p.created_at || new Date().toISOString(),
+      updatedAt: p.updated_at || new Date().toISOString(),
+      createdBy: p.created_by || ''
     })) as Product[];
   },
 
