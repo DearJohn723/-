@@ -1005,6 +1005,7 @@ function UserManagementView() {
   const [newRole, setNewRole] = useState<'admin' | 'viewer'>('viewer');
   const [addError, setAddError] = useState('');
   const [addLoading, setAddLoading] = useState(false);
+  const [confirmDeleteUid, setConfirmDeleteUid] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -1096,9 +1097,10 @@ function UserManagementView() {
       return;
     }
 
-    if (confirm(`确定要删除用户 ${email} 吗？`)) {
+    if (confirmDeleteUid === uid) {
       try {
         await databaseService.deleteUserProfile(uid);
+        setConfirmDeleteUid(null);
         // Refresh list
         const updatedUsers = await databaseService.getAllUserProfiles();
         setUsers(updatedUsers);
@@ -1106,6 +1108,8 @@ function UserManagementView() {
         console.error("Delete User Error:", err);
         alert('删除用户失败');
       }
+    } else {
+      setConfirmDeleteUid(uid);
     }
   };
 
@@ -1245,12 +1249,25 @@ function UserManagementView() {
                       </select>
                       <button
                         onClick={() => handleDeleteUser(u.uid, u.email, u.role)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                        title="删除用户"
+                        className={cn(
+                          "p-1.5 rounded-lg transition-all flex items-center gap-1 text-xs font-medium",
+                          confirmDeleteUid === u.uid 
+                            ? "bg-red-600 text-white hover:bg-red-700" 
+                            : "text-gray-400 hover:text-red-600 hover:bg-red-50"
+                        )}
+                        title={confirmDeleteUid === u.uid ? "点击确认删除" : "删除用户"}
                         disabled={u.email === 'john@greatidea.tw'}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {confirmDeleteUid === u.uid ? "确认删除?" : <Trash2 className="w-4 h-4" />}
                       </button>
+                      {confirmDeleteUid === u.uid && (
+                        <button 
+                          onClick={() => setConfirmDeleteUid(null)}
+                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
