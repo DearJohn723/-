@@ -82,6 +82,7 @@ export default function App() {
   const [isImporting, setIsImporting] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewVideo, setPreviewVideo] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('全部');
   const [sortBy, setSortBy] = useState<keyof Product>('updatedAt');
@@ -703,7 +704,11 @@ export default function App() {
                               </div>
                             )}
                             {product.videos && product.videos.length > 0 && (
-                              <div className="w-10 h-10 bg-blue-50 rounded-lg border border-blue-100 flex items-center justify-center">
+                              <div 
+                                className="w-10 h-10 bg-blue-50 rounded-lg border border-blue-100 flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors"
+                                onClick={() => setPreviewVideo(product.videos[0])}
+                                title="播放视频"
+                              >
                                 <VideoIcon className="w-4 h-4 text-blue-400" />
                               </div>
                             )}
@@ -789,6 +794,7 @@ export default function App() {
             existingTags={allExistingTags}
             exchangeRate={exchangeRate}
             onPreviewImage={setPreviewImage}
+            onPreviewVideo={setPreviewVideo}
           />
         )}
         {isExportModalOpen && (
@@ -831,6 +837,44 @@ export default function App() {
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
               />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Video Preview Modal */}
+      <AnimatePresence>
+        {previewVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPreviewVideo(null)}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setPreviewVideo(null)}
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-all z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="aspect-video w-full bg-black flex items-center justify-center">
+                <video
+                  src={previewVideo}
+                  controls
+                  autoPlay
+                  className="max-w-full max-h-[80vh]"
+                >
+                  您的浏览器不支持视频播放。
+                </video>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -1389,7 +1433,8 @@ function ProductModal({
   categories, 
   existingTags,
   exchangeRate,
-  onPreviewImage
+  onPreviewImage,
+  onPreviewVideo
 }: { 
   product: Product | null, 
   onClose: () => void, 
@@ -1397,7 +1442,8 @@ function ProductModal({
   categories: string[],
   existingTags: string[],
   exchangeRate: number,
-  onPreviewImage: (url: string) => void
+  onPreviewImage: (url: string) => void,
+  onPreviewVideo: (url: string) => void
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -1818,7 +1864,11 @@ function ProductModal({
                       placeholder="https://..."
                     />
                     {watch(`videos.${index}.url`) && (
-                      <div className="w-10 h-10 rounded-lg border border-blue-100 bg-blue-50 flex items-center justify-center flex-shrink-0">
+                      <div 
+                        className="w-10 h-10 rounded-lg border border-blue-100 bg-blue-50 flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-blue-100 transition-colors"
+                        onClick={() => onPreviewVideo(watch(`videos.${index}.url`))}
+                        title="播放视频"
+                      >
                         <VideoIcon className="w-4 h-4 text-blue-400" />
                       </div>
                     )}
