@@ -389,7 +389,7 @@ export default function App() {
                 factoryPrice: Number(row['出厂价格'] || row['出廠價格'] || row['成本价格'] || row['成本價格']) || 0,
                 agentPrice: Number(row['代理商价格'] || row['代理商價格']) || 0,
                 domesticPrice: Number(row['国内售价'] || row['國內售價']) || 0,
-                overseasPrice: Number(row['海外售价'] || row['海外售價']) || 0,
+                overseasPrice: Math.round(Number(row['海外售价'] || row['海外售價'] || 0)),
                 stock: Number(row['库存'] || row['庫存']) || 0,
                 photos: row['图片链接'] || row['圖片連結'] ? String(row['图片链接'] || row['圖片連結']).split(';').map((p: string) => p.trim()).filter(Boolean) : [],
                 videos: row['视频链接'] || row['視頻連結'] ? String(row['视频链接'] || row['視頻連結']).split(';').map((v: string) => v.trim()).filter(Boolean) : [],
@@ -777,8 +777,8 @@ export default function App() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col text-sm">
-                            <span className="text-gray-900">US$ {product.overseasPrice?.toLocaleString()}</span>
-                            <span className="text-gray-400 text-[10px]">≈ ¥{(product.overseasPrice * exchangeRate).toFixed(2)}</span>
+                            <span className="text-gray-900">US$ {Math.round(product.overseasPrice || 0).toLocaleString()}</span>
+                            <span className="text-gray-400 text-[10px]">≈ ¥{(Math.round(product.overseasPrice || 0) * exchangeRate).toFixed(2)}</span>
                           </div>
                         </td>
                         {!isViewer && (
@@ -1548,6 +1548,7 @@ function ProductModal({
       if (product && product.id) {
         await databaseService.updateProduct(product.id, {
           ...data,
+          overseasPrice: Math.round(data.overseasPrice || 0),
           tags,
           photos,
           videos,
@@ -1555,6 +1556,7 @@ function ProductModal({
       } else {
         await databaseService.addProduct({
           ...data,
+          overseasPrice: Math.round(data.overseasPrice || 0),
           id: crypto.randomUUID(),
           tags,
           photos,
@@ -1844,12 +1846,19 @@ function ProductModal({
                 <div className="relative">
                   <input 
                     type="number" 
-                    step="0.01"
-                    {...register('overseasPrice', { valueAsNumber: true })} 
+                    {...register('overseasPrice', { 
+                      valueAsNumber: true,
+                      onBlur: (e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) {
+                          setValue('overseasPrice', Math.round(val));
+                        }
+                      }
+                    })} 
                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" 
                   />
                   <div className="mt-1 text-[10px] text-gray-400">
-                    约合人民币: <span className="font-bold text-blue-600">¥{(watch('overseasPrice') * exchangeRate).toFixed(2)}</span>
+                    约合人民币: <span className="font-bold text-blue-600">¥{(Math.round(watch('overseasPrice') || 0) * exchangeRate).toFixed(2)}</span>
                     <span className="ml-2">(当前汇率: {exchangeRate.toFixed(4)})</span>
                   </div>
                 </div>
