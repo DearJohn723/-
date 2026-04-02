@@ -162,16 +162,24 @@ export default function App() {
       if (profile) {
         setUserProfile(profile);
       } else {
-        // Auto-create profile for new Supabase users
-        const newProfile: UserProfile = {
-          uid: session.user.id,
-          email: session.user.email || '',
-          displayName: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
-          role: (session.user.email === 'john@greatidea.tw' || session.user.email === 'wesleytw723@gmail.com') ? 'admin' : 'viewer',
-          createdAt: new Date().toISOString()
-        };
-        await databaseService.createUserProfile(newProfile);
-        setUserProfile(newProfile);
+        // Only auto-create for specific admin emails
+        if (session.user.email === 'john@greatidea.tw' || session.user.email === 'wesleytw723@gmail.com') {
+          const newProfile: UserProfile = {
+            uid: session.user.id,
+            email: session.user.email || '',
+            displayName: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'Admin',
+            role: 'admin',
+            createdAt: new Date().toISOString()
+          };
+          await databaseService.createUserProfile(newProfile);
+          setUserProfile(newProfile);
+        } else {
+          // Unauthorized user - logout
+          await supabase?.auth.signOut();
+          setUser(null);
+          setUserProfile(null);
+          alert('您的帳號尚未被授權存取此系統。請聯繫管理員。');
+        }
       }
     } else {
       setUser(null);
@@ -1050,8 +1058,6 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
   const [isEmailLogin, setIsEmailLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -1061,25 +1067,11 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
     setError('');
     setLoading(true);
     try {
-      if (isRegistering) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: displayName
-            }
-          }
-        });
-        if (error) throw error;
-        alert('注册成功！請檢查郵箱驗證（如果啟用了驗證）。');
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      if (error) throw error;
     } catch (err: any) {
       if (err.message === 'Invalid login credentials') {
         setError('登录失败：账号或密码错误。');
@@ -1108,21 +1100,6 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
 
         {isEmailLogin ? (
           <form onSubmit={handleEmailAuth} className="space-y-4">
-            {isRegistering && (
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500">姓名</label>
-                <div className="relative">
-                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    required
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-500">邮箱</label>
               <div className="relative">
@@ -1158,17 +1135,10 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
               className="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isRegistering ? '注册账号' : '登录'}
+              登录
             </button>
 
-            <div className="flex items-center justify-between text-xs">
-              <button 
-                type="button" 
-                onClick={() => setIsRegistering(!isRegistering)}
-                className="text-blue-600 hover:underline"
-              >
-                {isRegistering ? '已有账号？去登录' : '没有账号？去注册'}
-              </button>
+            <div className="flex items-center justify-end text-xs">
               <button 
                 type="button" 
                 onClick={() => setIsEmailLogin(false)}
