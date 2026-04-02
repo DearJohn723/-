@@ -1,155 +1,280 @@
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot,
-  Timestamp,
-  addDoc,
-  serverTimestamp
-} from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { supabase } from '../supabase';
 import { Product, UserProfile } from '../types';
 
 export const databaseService = {
   // Products
   async getProducts() {
-    const productsCol = collection(db, 'products');
-    const q = query(productsCol, orderBy('updatedAt', 'desc'));
-    const snapshot = await getDocs(q);
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('updated_at', { ascending: false });
     
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : data.updatedAt,
-      } as Product;
-    });
+    if (error) {
+      console.error("Supabase getProducts Error:", error);
+      throw error;
+    }
+    
+    if (!data) return [];
+    
+    return (data as any[]).map(p => ({
+      id: p.id,
+      productCode: p.product_code || '',
+      name: p.name || '',
+      subName: p.sub_name || '',
+      category: p.category || '未分類',
+      description: p.description || '',
+      tags: p.tags || [],
+      factoryPrice: Number(p.factory_price || p.cost_price || 0),
+      agentPrice: Number(p.agent_price || 0),
+      domesticPrice: Number(p.domestic_price || 0),
+      overseasPrice: Number(p.overseas_price || 0),
+      stock: p.stock || 0,
+      size: p.size || '',
+      weight: p.weight || '',
+      type: p.type || '',
+      pieces: p.pieces || 0,
+      color: p.color || '',
+      releaseDate: p.release_date || '',
+      monthlySales: p.monthly_sales || [],
+      photos: p.photos || [],
+      videos: p.videos || [],
+      createdAt: p.created_at || new Date().toISOString(),
+      updatedAt: p.updated_at || new Date().toISOString(),
+      createdBy: p.created_by || ''
+    })) as Product[];
   },
 
-  subscribeToProducts(callback: (products: Product[]) => void) {
-    const productsCol = collection(db, 'products');
-    const q = query(productsCol, orderBy('updatedAt', 'desc'));
+  async subscribeToProducts(callback: (products: Product[]) => void) {
+    if (!supabase) return () => {};
+    const subscription = supabase
+      .channel('public:products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
+        const products = await this.getProducts();
+        callback(products);
+      })
+      .subscribe();
     
-    return onSnapshot(q, (snapshot) => {
-      const products = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt,
-          updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : data.updatedAt,
-        } as Product;
-      });
-      callback(products);
-    }, (error) => {
-      console.error("Firestore subscribeToProducts Error:", error);
-    });
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   },
 
   async addProduct(product: Partial<Product>) {
-    const productsCol = collection(db, 'products');
-    const { id, ...productData } = product;
-    
-    const dataToSave = {
-      ...productData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      createdBy: auth.currentUser?.uid || product.createdBy || ''
+    if (!supabase) throw new Error('Supabase not configured');
+    const formattedProduct: any = {
+      product_code: product.productCode,
+      name: product.name,
+      sub_name: product.subName,
+      category: product.category,
+      description: product.description,
+      tags: product.tags,
+      factory_price: product.factoryPrice,
+      agent_price: product.agentPrice,
+      domestic_price: product.domesticPrice,
+      overseas_price: product.overseasPrice,
+      stock: product.stock,
+      size: product.size,
+      weight: product.weight,
+      type: product.type,
+      pieces: product.pieces,
+      color: product.color,
+      release_date: product.releaseDate,
+      monthly_sales: product.monthlySales,
+      photos: product.photos,
+      videos: product.videos,
+      created_by: product.createdBy,
     };
 
-    if (id) {
-      await setDoc(doc(db, 'products', id), dataToSave);
-      return { id, ...productData } as Product;
+    if (product.id) {
+      formattedProduct.id = product.id;
     } else {
-      const docRef = await addDoc(productsCol, dataToSave);
-      return { id: docRef.id, ...productData } as Product;
+      // Generate a new UUID if not provided
+      formattedProduct.id = crypto.randomUUID();
     }
+    if (product.createdAt) {
+      formattedProduct.created_at = product.createdAt;
+    } else {
+      formattedProduct.created_at = new Date().toISOString();
+    }
+    
+    if (product.updatedAt) {
+      formattedProduct.updated_at = product.updatedAt;
+    } else {
+      formattedProduct.updated_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .from('products')
+      .insert([formattedProduct])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as Product;
   },
 
   async updateProduct(id: string, product: Partial<Product>) {
-    const docRef = doc(db, 'products', id);
-    const { id: _, ...productData } = product;
-    
-    const dataToUpdate = {
-      ...productData,
-      updatedAt: serverTimestamp()
-    };
+    if (!supabase) throw new Error('Supabase not configured');
+    const formattedProduct: any = {};
+    if (product.productCode) formattedProduct.product_code = product.productCode;
+    if (product.name) formattedProduct.name = product.name;
+    if (product.subName) formattedProduct.sub_name = product.subName;
+    if (product.category) formattedProduct.category = product.category;
+    if (product.description) formattedProduct.description = product.description;
+    if (product.tags) formattedProduct.tags = product.tags;
+    if (product.factoryPrice !== undefined) formattedProduct.factory_price = product.factoryPrice;
+    if (product.agentPrice !== undefined) formattedProduct.agent_price = product.agentPrice;
+    if (product.domesticPrice) formattedProduct.domestic_price = product.domesticPrice;
+    if (product.overseasPrice) formattedProduct.overseas_price = product.overseasPrice;
+    if (product.stock !== undefined) formattedProduct.stock = product.stock;
+    if (product.size) formattedProduct.size = product.size;
+    if (product.weight) formattedProduct.weight = product.weight;
+    if (product.type) formattedProduct.type = product.type;
+    if (product.pieces !== undefined) formattedProduct.pieces = product.pieces;
+    if (product.color) formattedProduct.color = product.color;
+    if (product.releaseDate) formattedProduct.release_date = product.releaseDate;
+    if (product.monthlySales) formattedProduct.monthly_sales = product.monthlySales;
+    if (product.photos) formattedProduct.photos = product.photos;
+    if (product.videos) formattedProduct.videos = product.videos;
+    formattedProduct.updated_at = new Date().toISOString();
 
-    await updateDoc(docRef, dataToUpdate);
-    const updatedDoc = await getDoc(docRef);
-    return { id: updatedDoc.id, ...updatedDoc.data() } as Product;
+    const { data, error } = await supabase
+      .from('products')
+      .update(formattedProduct)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as Product;
   },
 
   async deleteProduct(id: string) {
-    await deleteDoc(doc(db, 'products', id));
+    if (!supabase) throw new Error('Supabase not configured');
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
   },
 
   async checkProductCodeUnique(productCode: string, excludeId?: string) {
-    const productsCol = collection(db, 'products');
-    const q = query(productsCol, where('productCode', '==', productCode));
-    const snapshot = await getDocs(q);
+    if (!supabase) return true;
+    let query = supabase
+      .from('products')
+      .select('id')
+      .eq('product_code', productCode);
     
-    if (snapshot.empty) return true;
-    if (excludeId && snapshot.docs.length === 1 && snapshot.docs[0].id === excludeId) return true;
+    if (excludeId) {
+      query = query.neq('id', excludeId);
+    }
     
-    return false;
+    const { data, error } = await query;
+    if (error) throw error;
+    return data.length === 0;
   },
 
   // Users
   async getUserProfile(uid: string) {
-    const docRef = doc(db, 'users', uid);
-    const docSnap = await getDoc(docRef);
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', uid)
+      .maybeSingle();
     
-    if (docSnap.exists()) {
-      return docSnap.data() as UserProfile;
-    }
-    return null;
+    if (error) return null;
+    if (!data) return null;
+    return {
+      uid: data.id,
+      email: data.email,
+      displayName: data.display_name,
+      role: data.role,
+      createdAt: data.created_at
+    } as UserProfile;
   },
 
   async getUserProfileByEmail(email: string) {
-    const usersCol = collection(db, 'users');
-    const q = query(usersCol, where('email', '==', email));
-    const snapshot = await getDocs(q);
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
     
-    if (!snapshot.empty) {
-      return snapshot.docs[0].data() as UserProfile;
-    }
-    return null;
+    if (error) return null;
+    if (!data) return null;
+    return {
+      uid: data.id,
+      email: data.email,
+      displayName: data.display_name,
+      role: data.role,
+      createdAt: data.created_at
+    } as UserProfile;
   },
 
   async createUserProfile(profile: UserProfile) {
-    await setDoc(doc(db, 'users', profile.uid), {
-      ...profile,
-      createdAt: profile.createdAt || serverTimestamp()
-    });
-    return profile;
+    if (!supabase) throw new Error('Supabase not configured');
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert([{
+        id: profile.uid,
+        email: profile.email,
+        display_name: profile.displayName,
+        role: profile.role,
+        created_at: profile.createdAt
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
   },
 
   async updateUserProfile(uid: string, profile: Partial<UserProfile>) {
-    const docRef = doc(db, 'users', uid);
-    await updateDoc(docRef, profile);
-    const updatedDoc = await getDoc(docRef);
-    return updatedDoc.data() as UserProfile;
+    if (!supabase) throw new Error('Supabase not configured');
+    const updates: any = {};
+    if (profile.displayName) updates.display_name = profile.displayName;
+    if (profile.role) updates.role = profile.role;
+    if (profile.email) updates.email = profile.email;
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update(updates)
+      .eq('id', uid)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
   },
 
   async deleteUserProfile(uid: string) {
-    await deleteDoc(doc(db, 'users', uid));
+    if (!supabase) throw new Error('Supabase not configured');
+    const { error } = await supabase
+      .from('user_profiles')
+      .delete()
+      .eq('id', uid);
+    
+    if (error) throw error;
   },
 
   async getAllUserProfiles() {
-    const usersCol = collection(db, 'users');
-    const q = query(usersCol, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
     
-    return snapshot.docs.map(doc => doc.data() as UserProfile);
+    if (error) throw error;
+    return (data as any[]).map(u => ({
+      uid: u.id,
+      email: u.email,
+      displayName: u.display_name,
+      role: u.role,
+      createdAt: u.created_at
+    })) as UserProfile[];
   }
 };

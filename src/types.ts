@@ -1,5 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
-
 export interface MonthlySale {
   yearMonth: string; // e.g., "2024-03"
   quantity: number;
@@ -10,7 +8,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   role: 'admin' | 'viewer';
-  createdAt: any; // Flexible for Timestamp or ISO string
+  createdAt: string;
 }
 
 export interface Product {
@@ -24,7 +22,6 @@ export interface Product {
   factoryPrice: number;
   agentPrice: number;
   domesticPrice: number;
-  overseas_price?: number; // Handle snake_case from DB if needed
   overseasPrice: number;
   stock: number;
   size: string;
@@ -36,7 +33,7 @@ export interface Product {
   monthlySales: MonthlySale[];
   photos: string[];
   videos: string[];
-  createdAt: any;
-  updatedAt: any;
+  createdAt: string;
+  updatedAt: string;
   createdBy: string;
 }

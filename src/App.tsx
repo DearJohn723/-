@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { auth, signIn, logOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { supabase } from './supabase';
 import { databaseService } from './services/databaseService';
 import { Product, MonthlySale, UserProfile } from './types';
+import { Session } from '@supabase/supabase-js';
 import { cn } from './lib/utils';
 import { 
   Plus, 
@@ -112,51 +112,87 @@ export default function App() {
 
   // Auth listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        // Fetch profile from our users collection
-        let profile = await databaseService.getUserProfile(firebaseUser.uid);
-        
-        if (!profile && firebaseUser.email) {
-          // Try to find by email (for migrated users)
-          const existingProfile = await databaseService.getUserProfileByEmail(firebaseUser.email);
-          if (existingProfile) {
-            profile = {
-              ...existingProfile,
-              uid: firebaseUser.uid
-            };
-            await databaseService.createUserProfile(profile);
-          }
-        }
-
-        if (profile) {
-          setUserProfile(profile);
-        } else {
-          // Auto-create profile for new users
-          const newProfile: UserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-            role: (firebaseUser.email === 'john@greatidea.tw' || firebaseUser.email === 'wesleytw723@gmail.com') ? 'admin' : 'viewer',
-            createdAt: new Date().toISOString()
-          };
-          await databaseService.createUserProfile(newProfile);
-          setUserProfile(newProfile);
-        }
-      } else {
-        setUser(null);
-        setUserProfile(null);
-      }
+    if (!supabase) {
       setLoading(false);
+      return;
+    }
+
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleAuthChange(session);
     });
 
-    return () => unsubscribe();
+    // 2. Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        handleAuthChange(session);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  const handleAuthChange = async (session: Session | null) => {
+    if (session?.user) {
+      setUser(session.user);
+      // Fetch profile from our user_profiles table
+      let profile = await databaseService.getUserProfile(session.user.id);
+      
+      if (!profile && session.user.email) {
+        // Try to find by email (for migrated users)
+        const existingProfile = await databaseService.getUserProfileByEmail(session.user.email);
+        if (existingProfile) {
+          // Link the old profile to the new Supabase UID
+          profile = {
+            ...existingProfile,
+            uid: session.user.id
+          };
+          await databaseService.createUserProfile(profile);
+          // Delete the old record if the ID changed
+          if (existingProfile.uid !== session.user.id) {
+            try {
+              await databaseService.deleteUserProfile(existingProfile.uid);
+            } catch (e) {
+              console.error("Failed to delete old profile:", e);
+            }
+          }
+        }
+      }
+
+      if (profile) {
+        setUserProfile(profile);
+      } else {
+        // Auto-create profile for new Supabase users
+        const newProfile: UserProfile = {
+          uid: session.user.id,
+          email: session.user.email || '',
+          displayName: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'User',
+          role: (session.user.email === 'john@greatidea.tw' || session.user.email === 'wesleytw723@gmail.com') ? 'admin' : 'viewer',
+          createdAt: new Date().toISOString()
+        };
+        await databaseService.createUserProfile(newProfile);
+        setUserProfile(newProfile);
+      }
+    } else {
+      setUser(null);
+      setUserProfile(null);
+    }
+    setLoading(false);
+  };
+
   const handleLogin = async () => {
+    if (!supabase) {
+      alert('Supabase 尚未配置。請在 AI Studio 的「Settings」選單中設定 VITE_SUPABASE_URL 和 VITE_SUPABASE_ANON_KEY。');
+      return;
+    }
     try {
-      await signIn();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
     } catch (error: any) {
       console.error("Login Error: ", error);
       alert(`登入失敗：${error.message}`);
@@ -164,9 +200,10 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    if (!supabase) return;
     try {
-      await logOut();
-    } catch (error: any) {
+      await supabase.auth.signOut();
+    } catch (error) {
       console.error("Logout Error: ", error);
     }
   };
@@ -197,13 +234,13 @@ export default function App() {
     // Initial fetch
     fetchProducts();
 
-    // Realtime listener
+    // Supabase Realtime
     const unsubscribe = databaseService.subscribeToProducts((updatedProducts) => {
       setProducts(updatedProducts);
     });
 
     return () => {
-      unsubscribe();
+      unsubscribe.then(unsub => unsub());
     };
   }, [user]);
 
@@ -999,18 +1036,35 @@ function LoginView({ onLogin }: { onLogin: () => void }) {
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabase) return;
     setError('');
     setLoading(true);
     try {
       if (isRegistering) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName });
-        alert('注册成功！');
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: displayName
+            }
+          }
+        });
+        if (error) throw error;
+        alert('注册成功！請檢查郵箱驗證（如果啟用了驗證）。');
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) throw error;
       }
     } catch (err: any) {
-      setError(err.message);
+      if (err.message === 'Invalid login credentials') {
+        setError('登录失败：账号或密码错误。');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -1158,14 +1212,24 @@ function UserManagementView() {
     setAddLoading(true);
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, newEmail, newPassword);
-      await updateProfile(userCredential.user, { displayName: newDisplayName });
+      if (!supabase) throw new Error('Supabase not configured');
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: newEmail,
+        password: newPassword,
+        options: {
+          data: {
+            display_name: newDisplayName,
+          }
+        }
+      });
 
-      if (!userCredential.user) throw new Error('User creation failed');
+      if (error) throw error;
+      if (!data.user) throw new Error('User creation failed');
 
-      // Create user profile in Firestore
+      // Create user profile in Supabase
       const newUserProfile: UserProfile = {
-        uid: userCredential.user.uid,
+        uid: data.user.id,
         email: newEmail,
         displayName: newDisplayName,
         role: newRole,
