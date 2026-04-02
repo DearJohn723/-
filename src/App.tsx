@@ -81,6 +81,7 @@ export default function App() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('全部');
   const [sortBy, setSortBy] = useState<keyof Product>('updatedAt');
@@ -692,7 +693,8 @@ export default function App() {
                               <img 
                                 src={product.photos[0]} 
                                 alt={product.name} 
-                                className="w-10 h-10 object-cover rounded-lg border border-gray-100 shadow-sm"
+                                onClick={() => setPreviewImage(product.photos[0])}
+                                className="w-10 h-10 object-cover rounded-lg border border-gray-100 shadow-sm cursor-zoom-in hover:scale-105 transition-transform"
                                 referrerPolicy="no-referrer"
                               />
                             ) : (
@@ -786,6 +788,7 @@ export default function App() {
             categories={dynamicCategories}
             existingTags={allExistingTags}
             exchangeRate={exchangeRate}
+            onPreviewImage={setPreviewImage}
           />
         )}
         {isExportModalOpen && (
@@ -796,6 +799,40 @@ export default function App() {
               setIsExportModalOpen(false);
             }}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Image Preview Modal */}
+      <AnimatePresence>
+        {previewImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPreviewImage(null)}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-4xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-all z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <img
+                src={previewImage}
+                alt="Enlarged preview"
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
@@ -1351,14 +1388,16 @@ function ProductModal({
   user, 
   categories, 
   existingTags,
-  exchangeRate
+  exchangeRate,
+  onPreviewImage
 }: { 
   product: Product | null, 
   onClose: () => void, 
   user: UserProfile,
   categories: string[],
   existingTags: string[],
-  exchangeRate: number
+  exchangeRate: number,
+  onPreviewImage: (url: string) => void
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -1733,7 +1772,10 @@ function ProductModal({
                       placeholder="https://..."
                     />
                     {watch(`photos.${index}.url`) && (
-                      <div className="w-10 h-10 rounded-lg border border-gray-100 overflow-hidden flex-shrink-0">
+                      <div 
+                        className="w-10 h-10 rounded-lg border border-gray-100 overflow-hidden flex-shrink-0 cursor-zoom-in hover:opacity-80 transition-opacity"
+                        onClick={() => onPreviewImage(watch(`photos.${index}.url`))}
+                      >
                         <img 
                           src={watch(`photos.${index}.url`)} 
                           alt="Preview" 
