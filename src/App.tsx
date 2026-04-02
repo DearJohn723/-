@@ -78,7 +78,6 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [isMigrating, setIsMigrating] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('全部');
@@ -358,62 +357,6 @@ export default function App() {
     setIsModalOpen(true);
   };
 
-  const handleMigrateToSupabase = async () => {
-    if (!isAdmin) return;
-    if (!supabase) {
-      alert('Supabase 尚未配置。請檢查 Vercel 中的環境變數 VITE_SUPABASE_URL 和 VITE_SUPABASE_ANON_KEY。');
-      return;
-    }
-    if (!confirm('确定要将所有 Firebase 数据迁移到 Supabase 吗？这可能会覆盖现有数据。')) return;
-
-    setIsMigrating(true);
-    try {
-      const { getDocs, collection, Timestamp } = await import('firebase/firestore');
-      const { db } = await import('./firebase');
-
-      // 1. Migrate Users
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      for (const userDoc of usersSnapshot.docs) {
-        const userData = userDoc.data() as any;
-        const createdAt = userData.createdAt instanceof Timestamp ? userData.createdAt.toDate() : new Date();
-        
-        const profile: UserProfile = {
-          ...userData,
-          uid: userDoc.id,
-          createdAt
-        };
-        await databaseService.createUserProfile(profile);
-      }
-
-      // 2. Migrate Products
-      const productsSnapshot = await getDocs(collection(db, 'products'));
-      for (const productDoc of productsSnapshot.docs) {
-        const productData = productDoc.data() as any;
-        
-        // Convert Firebase Timestamps to string/Date
-        const createdAt = productData.createdAt instanceof Timestamp ? productData.createdAt.toDate() : new Date();
-        const updatedAt = productData.updatedAt instanceof Timestamp ? productData.updatedAt.toDate() : new Date();
-
-        const product: Product = {
-          ...productData,
-          id: productDoc.id,
-          createdAt,
-          updatedAt,
-        };
-
-        await databaseService.addProduct(product);
-      }
-
-      alert('数据迁移成功！');
-    } catch (error: any) {
-      console.error('Migration Error:', error);
-      const errorMsg = error.message || JSON.stringify(error);
-      alert(`迁移失败：${errorMsg}`);
-    } finally {
-      setIsMigrating(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -452,16 +395,6 @@ export default function App() {
               <LayoutDashboard className="w-4 h-4" />
               产品管理
             </button>
-            {isAdmin && (
-              <button
-                onClick={handleMigrateToSupabase}
-                disabled={isMigrating}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded-lg transition-all border border-amber-200"
-              >
-                {isMigrating ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
-                迁移至 Supabase
-              </button>
-            )}
             {isAdmin && (
               <button
                 onClick={() => setActiveTab('users')}
