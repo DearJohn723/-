@@ -9,6 +9,7 @@ import {
   Search, 
   Filter, 
   Download, 
+  Upload,
   Edit2, 
   Trash2, 
   LogOut, 
@@ -78,6 +79,7 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('全部');
@@ -329,6 +331,83 @@ export default function App() {
     }
   };
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const bstr = evt.target?.result;
+          const wb = XLSX.read(bstr, { type: 'binary' });
+          const wsname = wb.SheetNames[0];
+          const ws = wb.Sheets[wsname];
+          const data = XLSX.utils.sheet_to_json(ws);
+
+          let successCount = 0;
+          let errorCount = 0;
+
+          for (const row of data as any[]) {
+            try {
+              // Map spreadsheet columns to Product object
+              // Note: We skip 'id' to ensure a new record is created even if it's a duplicate in content
+              const productData: any = {
+                productCode: String(row['产品编号'] || '').trim(),
+                name: String(row['名称'] || '').trim(),
+                subName: String(row['子产品名称'] || '').trim(),
+                category: String(row['分类'] || '未分類').trim(),
+                description: String(row['描述'] || '').trim(),
+                size: String(row['尺寸'] || '').trim(),
+                pieces: Number(row['片数']) || 0,
+                color: String(row['颜色'] || '').trim(),
+                releaseDate: String(row['上市日期'] || '').trim(),
+                tags: row['标签'] ? String(row['标签']).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
+                costPrice: Number(row['成本价格']) || 0,
+                agentPrice: Number(row['代理商价格']) || 0,
+                domesticPrice: Number(row['国内售价']) || 0,
+                overseasPrice: Number(row['海外售价']) || 0,
+                stock: Number(row['库存']) || 0,
+                photos: row['图片链接'] ? String(row['图片链接']).split(';').map((p: string) => p.trim()).filter(Boolean) : [],
+                videos: row['视频链接'] ? String(row['视频链接']).split(';').map((v: string) => v.trim()).filter(Boolean) : [],
+                monthlySales: [],
+                createdBy: user?.id || ''
+              };
+
+              if (!productData.productCode || !productData.name) {
+                console.warn('Skipping row due to missing required fields:', row);
+                errorCount++;
+                continue;
+              }
+
+              await databaseService.addProduct(productData);
+              successCount++;
+            } catch (err) {
+              console.error('Import row error:', err);
+              errorCount++;
+            }
+          }
+
+          alert(`导入完成！\n成功：${successCount} 笔\n失败：${errorCount} 笔`);
+          fetchProducts();
+        } catch (err) {
+          console.error('File processing error:', err);
+          alert('文件处理失败，请确保格式正确。');
+        } finally {
+          setIsImporting(false);
+        }
+      };
+      reader.readAsBinaryString(file);
+    } catch (error) {
+      console.error('Import error:', error);
+      alert('导入失败。');
+      setIsImporting(false);
+    }
+    // Reset input
+    e.target.value = '';
+  };
+
   const handleDelete = async (id: string) => {
     if (confirm('确定要删除此产品吗？')) {
       try {
@@ -488,13 +567,33 @@ export default function App() {
 
               <div className="flex gap-2 w-full md:w-auto">
                 {!isViewer && (
-                  <button
-                    onClick={() => setIsExportModalOpen(true)}
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
-                  >
-                    <Download className="w-4 h-4" />
-                    导出 Excel
-                  </button>
+                  <>
+                    <input
+                      type="file"
+                      id="import-excel"
+                      className="hidden"
+                      accept=".xlsx, .xls, .csv"
+                      onChange={handleImport}
+                      disabled={isImporting}
+                    />
+                    <label
+                      htmlFor="import-excel"
+                      className={cn(
+                        "flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium cursor-pointer",
+                        isImporting && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      导入 Excel
+                    </label>
+                    <button
+                      onClick={() => setIsExportModalOpen(true)}
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                    >
+                      <Download className="w-4 h-4" />
+                      导出 Excel
+                    </button>
+                  </>
                 )}
                 {!isViewer && (
                   <button
@@ -998,7 +1097,11 @@ function UserManagementView() {
       const updatedUsers = await databaseService.getAllUserProfiles();
       setUsers(updatedUsers);
     } catch (err: any) {
-      setAddError(err.message);
+      let errorMessage = err.message;
+      if (err.message.includes('rate limit exceeded')) {
+        errorMessage = '新增频率過快（每小時郵件限制已達上限）。請前往 Supabase 後台 Authentication > Settings > Rate Limits 調高 "Max Emails per Hour" 限制。';
+      }
+      setAddError(errorMessage);
     } finally {
       setAddLoading(false);
     }
