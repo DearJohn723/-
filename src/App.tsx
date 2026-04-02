@@ -1042,7 +1042,9 @@ function UserManagementView() {
         alert('删除用户失败');
       }
     } else {
-      setConfirmDeleteUid(uid);
+      if (confirm(`确定要删除用户 ${email} 吗？\n\n注意：此操作仅删除数据库中的个人资料。您仍需前往 Supabase 后台的 Authentication > Users 手动删除该账号，否则无法使用相同邮箱重新注册。`)) {
+        setConfirmDeleteUid(uid);
+      }
     }
   };
 
