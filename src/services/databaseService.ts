@@ -58,10 +58,9 @@ export const databaseService = {
     };
   },
 
-  async addProduct(product: Product) {
+  async addProduct(product: Partial<Product>) {
     if (!supabase) throw new Error('Supabase not configured');
-    const formattedProduct = {
-      id: product.id,
+    const formattedProduct: any = {
       product_code: product.productCode,
       name: product.name,
       sub_name: product.subName,
@@ -81,13 +80,24 @@ export const databaseService = {
       photos: product.photos,
       videos: product.videos,
       created_by: product.createdBy,
-      created_at: product.createdAt instanceof Date ? product.createdAt.toISOString() : product.createdAt,
-      updated_at: product.updatedAt instanceof Date ? product.updatedAt.toISOString() : product.updatedAt
     };
+
+    if (product.id) formattedProduct.id = product.id;
+    if (product.createdAt) {
+      formattedProduct.created_at = product.createdAt instanceof Date ? product.createdAt.toISOString() : product.createdAt;
+    } else {
+      formattedProduct.created_at = new Date().toISOString();
+    }
+    
+    if (product.updatedAt) {
+      formattedProduct.updated_at = product.updatedAt instanceof Date ? product.updatedAt.toISOString() : product.updatedAt;
+    } else {
+      formattedProduct.updated_at = new Date().toISOString();
+    }
 
     const { data, error } = await supabase
       .from('products')
-      .upsert([formattedProduct])
+      .insert([formattedProduct])
       .select()
       .single();
     

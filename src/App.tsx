@@ -340,8 +340,8 @@ export default function App() {
       const reader = new FileReader();
       reader.onload = async (evt) => {
         try {
-          const bstr = evt.target?.result;
-          const wb = XLSX.read(bstr, { type: 'binary' });
+          const dataBuffer = evt.target?.result;
+          const wb = XLSX.read(dataBuffer, { type: 'array' });
           const wsname = wb.SheetNames[0];
           const ws = wb.Sheets[wsname];
           const data = XLSX.utils.sheet_to_json(ws);
@@ -349,28 +349,33 @@ export default function App() {
           let successCount = 0;
           let errorCount = 0;
 
-          for (const row of data as any[]) {
+          for (const rawRow of data as any[]) {
             try {
+              // Normalize keys (trim and remove potential hidden characters)
+              const row: any = {};
+              Object.keys(rawRow).forEach(key => {
+                row[key.trim()] = rawRow[key];
+              });
+
               // Map spreadsheet columns to Product object
-              // Note: We skip 'id' to ensure a new record is created even if it's a duplicate in content
               const productData: any = {
-                productCode: String(row['产品编号'] || '').trim(),
-                name: String(row['名称'] || '').trim(),
-                subName: String(row['子产品名称'] || '').trim(),
-                category: String(row['分类'] || '未分類').trim(),
+                productCode: String(row['产品编号'] || row['產品編號'] || '').trim(),
+                name: String(row['名称'] || row['名稱'] || '').trim(),
+                subName: String(row['子产品名称'] || row['子產品名稱'] || '').trim(),
+                category: String(row['分类'] || row['分類'] || '未分類').trim(),
                 description: String(row['描述'] || '').trim(),
                 size: String(row['尺寸'] || '').trim(),
-                pieces: Number(row['片数']) || 0,
-                color: String(row['颜色'] || '').trim(),
+                pieces: Number(row['片数'] || row['片數']) || 0,
+                color: String(row['颜色'] || row['顏色'] || '').trim(),
                 releaseDate: String(row['上市日期'] || '').trim(),
-                tags: row['标签'] ? String(row['标签']).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
-                costPrice: Number(row['成本价格']) || 0,
-                agentPrice: Number(row['代理商价格']) || 0,
-                domesticPrice: Number(row['国内售价']) || 0,
-                overseasPrice: Number(row['海外售价']) || 0,
-                stock: Number(row['库存']) || 0,
-                photos: row['图片链接'] ? String(row['图片链接']).split(';').map((p: string) => p.trim()).filter(Boolean) : [],
-                videos: row['视频链接'] ? String(row['视频链接']).split(';').map((v: string) => v.trim()).filter(Boolean) : [],
+                tags: row['标签'] || row['標籤'] ? String(row['标签'] || row['標籤']).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
+                costPrice: Number(row['成本价格'] || row['成本價格']) || 0,
+                agentPrice: Number(row['代理商价格'] || row['代理商價格']) || 0,
+                domesticPrice: Number(row['国内售价'] || row['國內售價']) || 0,
+                overseasPrice: Number(row['海外售价'] || row['海外售價']) || 0,
+                stock: Number(row['库存'] || row['庫存']) || 0,
+                photos: row['图片链接'] || row['圖片連結'] ? String(row['图片链接'] || row['圖片連結']).split(';').map((p: string) => p.trim()).filter(Boolean) : [],
+                videos: row['视频链接'] || row['視頻連結'] ? String(row['视频链接'] || row['視頻連結']).split(';').map((v: string) => v.trim()).filter(Boolean) : [],
                 monthlySales: [],
                 createdBy: user?.id || ''
               };
@@ -398,7 +403,7 @@ export default function App() {
           setIsImporting(false);
         }
       };
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
     } catch (error) {
       console.error('Import error:', error);
       alert('导入失败。');
