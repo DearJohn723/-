@@ -21,13 +21,15 @@ export interface Product {
   category: string;
   description: string;
   tags: string[];
-  costPrice: number;
+  factoryPrice: number;
   agentPrice: number;
   domesticPrice: number;
   overseas_price?: number; // Handle snake_case from DB if needed
   overseasPrice: number;
   stock: number;
   size: string;
+  weight?: string;
+  type?: string;
   pieces: number;
   color: string;
   releaseDate: string;

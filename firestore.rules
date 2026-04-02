@@ -13,7 +13,9 @@ service cloud.firestore {
     //   - category: string (required)
     //   - description: string (optional)
     //   - tags: list (optional)
-    //   - costPrice: number (required)
+    //   - type: string (optional)
+    //   - weight: string (optional)
+    //   - factoryPrice: number (required)
     //   - agentPrice: number (optional)
     //   - domesticPrice: number (optional)
     //   - overseasPrice: number (optional)
@@ -47,11 +49,11 @@ service cloud.firestore {
     }
 
     function isValidProduct(data) {
-      return data.keys().hasAll(['productCode', 'name', 'category', 'costPrice', 'stock', 'createdAt', 'updatedAt', 'createdBy']) &&
+      return data.keys().hasAll(['productCode', 'name', 'category', 'factoryPrice', 'stock', 'createdAt', 'updatedAt', 'createdBy']) &&
              data.productCode is string && data.productCode.size() > 0 && data.productCode.size() < 100 &&
              data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
              data.category is string && data.category.size() > 0 &&
-             data.costPrice is number && data.costPrice >= 0 &&
+             data.factoryPrice is number && data.factoryPrice >= 0 &&
              data.stock is number && data.stock >= 0 &&
              data.createdBy == request.auth.uid;
     }

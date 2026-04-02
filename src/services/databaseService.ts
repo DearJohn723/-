@@ -25,12 +25,14 @@ export const databaseService = {
       category: p.category || '未分類',
       description: p.description || '',
       tags: p.tags || [],
-      costPrice: Number(p.cost_price || 0),
+      factoryPrice: Number(p.factory_price || p.cost_price || 0),
       agentPrice: Number(p.agent_price || 0),
       domesticPrice: Number(p.domestic_price || 0),
       overseasPrice: Number(p.overseas_price || 0),
       stock: p.stock || 0,
       size: p.size || '',
+      weight: p.weight || '',
+      type: p.type || '',
       pieces: p.pieces || 0,
       color: p.color || '',
       releaseDate: p.release_date || '',
@@ -67,12 +69,14 @@ export const databaseService = {
       category: product.category,
       description: product.description,
       tags: product.tags,
-      cost_price: product.costPrice,
+      factory_price: product.factoryPrice,
       agent_price: product.agentPrice,
       domestic_price: product.domesticPrice,
       overseas_price: product.overseasPrice,
       stock: product.stock,
       size: product.size,
+      weight: product.weight,
+      type: product.type,
       pieces: product.pieces,
       color: product.color,
       release_date: product.releaseDate,
@@ -119,12 +123,14 @@ export const databaseService = {
     if (product.category) formattedProduct.category = product.category;
     if (product.description) formattedProduct.description = product.description;
     if (product.tags) formattedProduct.tags = product.tags;
-    if (product.costPrice) formattedProduct.cost_price = product.costPrice;
-    if (product.agentPrice) formattedProduct.agent_price = product.agentPrice;
+    if (product.factoryPrice !== undefined) formattedProduct.factory_price = product.factoryPrice;
+    if (product.agentPrice !== undefined) formattedProduct.agent_price = product.agentPrice;
     if (product.domesticPrice) formattedProduct.domestic_price = product.domesticPrice;
     if (product.overseasPrice) formattedProduct.overseas_price = product.overseasPrice;
     if (product.stock !== undefined) formattedProduct.stock = product.stock;
     if (product.size) formattedProduct.size = product.size;
+    if (product.weight) formattedProduct.weight = product.weight;
+    if (product.type) formattedProduct.type = product.type;
     if (product.pieces !== undefined) formattedProduct.pieces = product.pieces;
     if (product.color) formattedProduct.color = product.color;
     if (product.releaseDate) formattedProduct.release_date = product.releaseDate;

@@ -29,6 +29,7 @@ import {
   Palette,
   Maximize,
   TrendingUp,
+  Weight,
   Users,
   Shield,
   Mail,
@@ -51,12 +52,14 @@ const productSchema = z.object({
   category: z.string().min(1, '分类为必填'),
   description: z.string().optional(),
   tags: z.string().optional(),
-  costPrice: z.number().min(0, '成本价格不能小于0'),
+  factoryPrice: z.number().min(0, '出厂价格不能小于0'),
   agentPrice: z.number().min(0).optional(),
   domesticPrice: z.number().min(0).optional(),
   overseasPrice: z.number().min(0).optional(),
   stock: z.number().int().min(0, '库存不能小于0'),
   size: z.string().optional(),
+  weight: z.string().optional(),
+  type: z.string().optional(),
   pieces: z.number().int().min(0).optional(),
   color: z.string().optional(),
   releaseDate: z.string().optional(),
@@ -302,7 +305,9 @@ export default function App() {
       if (selectedColumns.includes('颜色')) row['颜色'] = p.color;
       if (selectedColumns.includes('上市日期')) row['上市日期'] = p.releaseDate;
       if (selectedColumns.includes('标签')) row['标签'] = p.tags.join(', ');
-      if (selectedColumns.includes('成本价格')) row['成本价格'] = p.costPrice;
+      if (selectedColumns.includes('类型')) row['类型'] = p.type || '';
+      if (selectedColumns.includes('重量')) row['重量'] = p.weight || '';
+      if (selectedColumns.includes('出厂价格')) row['出厂价格'] = p.factoryPrice;
       if (selectedColumns.includes('代理商价格')) row['代理商价格'] = p.agentPrice || 0;
       if (selectedColumns.includes('国内售价')) row['国内售价'] = p.domesticPrice || 0;
       if (selectedColumns.includes('海外售价')) row['海外售价'] = p.overseasPrice || 0;
@@ -371,7 +376,9 @@ export default function App() {
                 color: String(row['颜色'] || row['顏色'] || '').trim(),
                 releaseDate: String(row['上市日期'] || '').trim(),
                 tags: row['标签'] || row['標籤'] ? String(row['标签'] || row['標籤']).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
-                costPrice: Number(row['成本价格'] || row['成本價格']) || 0,
+                type: String(row['类型'] || row['類型'] || '').trim(),
+                weight: String(row['重量'] || '').trim(),
+                factoryPrice: Number(row['出厂价格'] || row['出廠價格'] || row['成本价格'] || row['成本價格']) || 0,
                 agentPrice: Number(row['代理商价格'] || row['代理商價格']) || 0,
                 domesticPrice: Number(row['国内售价'] || row['國內售價']) || 0,
                 overseasPrice: Number(row['海外售价'] || row['海外售價']) || 0,
@@ -644,6 +651,8 @@ export default function App() {
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">预览</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">分类</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">类型</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">重量</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         <button 
                           className="flex items-center gap-1 hover:text-blue-600 transition-colors"
@@ -718,6 +727,12 @@ export default function App() {
                           <span className="text-sm text-gray-600">{product.category}</span>
                         </td>
                         <td className="px-6 py-4">
+                          <span className="text-sm text-gray-600">{product.type || '-'}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-600">{product.weight || '-'}</span>
+                        </td>
+                        <td className="px-6 py-4">
                           <span className={cn(
                             "text-sm font-semibold",
                             product.stock <= 5 ? "text-red-600" : "text-gray-700"
@@ -768,7 +783,7 @@ export default function App() {
                     ))}
                     {filteredProducts.length === 0 && (
                       <tr>
-                        <td colSpan={isViewer ? 6 : 7} className="px-6 py-12 text-center text-gray-500">
+                        <td colSpan={isViewer ? 8 : 9} className="px-6 py-12 text-center text-gray-500">
                           找不到符合条件的产品
                         </td>
                       </tr>
@@ -1487,7 +1502,9 @@ function ProductModal({
       category: product.category,
       description: product.description,
       tags: product.tags.join(', '),
-      costPrice: product.costPrice,
+      type: product.type || '',
+      weight: product.weight || '',
+      factoryPrice: product.factoryPrice,
       agentPrice: product.agentPrice,
       domesticPrice: product.domesticPrice,
       overseasPrice: product.overseasPrice,
@@ -1505,7 +1522,9 @@ function ProductModal({
       subName: '',
       category: '',
       stock: 0,
-      costPrice: 0,
+      type: '',
+      weight: '',
+      factoryPrice: 0,
       monthlySales: [],
       photos: [],
       videos: []
@@ -1682,6 +1701,28 @@ function ProductModal({
 
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Weight className="w-4 h-4" /> 重量
+                </label>
+                <input
+                  {...register('weight')}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="例如: 500g"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <TagIcon className="w-4 h-4" /> 类型
+                </label>
+                <input
+                  {...register('type')}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="例如: 礼品"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <Layers className="w-4 h-4" /> 片数
                 </label>
                 <input
@@ -1794,9 +1835,9 @@ function ProductModal({
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500">成本价格 *</label>
-                <input type="number" {...register('costPrice', { valueAsNumber: true })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
-                {errors.costPrice && <p className="text-[10px] text-red-500">{errors.costPrice.message}</p>}
+                <label className="text-xs font-medium text-gray-500">出厂价格 *</label>
+                <input type="number" {...register('factoryPrice', { valueAsNumber: true })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                {errors.factoryPrice && <p className="text-[10px] text-red-500">{errors.factoryPrice.message}</p>}
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-500">代理商价格</label>

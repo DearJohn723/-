@@ -25,7 +25,9 @@
         "category": { "type": "string", "description": "Product category" },
         "description": { "type": "string", "description": "Detailed description" },
         "tags": { "type": "array", "items": { "type": "string" }, "description": "Searchable tags" },
-        "costPrice": { "type": "number", "description": "Cost price" },
+        "type": { "type": "string", "description": "Product type" },
+        "weight": { "type": "string", "description": "Product weight" },
+        "factoryPrice": { "type": "number", "description": "Factory price" },
         "agentPrice": { "type": "number", "description": "Agent price" },
         "domesticPrice": { "type": "number", "description": "Domestic selling price" },
         "overseasPrice": { "type": "number", "description": "Overseas selling price" },
@@ -50,7 +52,7 @@
         "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" },
         "createdBy": { "type": "string", "description": "UID of the creator" }
       },
-      "required": ["productCode", "name", "category", "costPrice", "stock"]
+      "required": ["productCode", "name", "category", "factoryPrice", "stock"]
     }
   },
   "firestore": {
