@@ -25,7 +25,7 @@ export const databaseService = {
       category: p.category || '未分類',
       description: p.description || '',
       tags: p.tags || [],
-      factoryPrice: Number(p.factory_price || p.cost_price || 0),
+      factoryPrice: Number(p.cost_price || p.factory_price || 0), // 優先讀取舊有的 cost_price
       agentPrice: Number(p.agent_price || 0),
       domesticPrice: Number(p.domestic_price || 0),
       overseasPrice: Number(p.overseas_price || 0),
@@ -69,7 +69,7 @@ export const databaseService = {
       category: product.category,
       description: product.description,
       tags: product.tags,
-      factory_price: product.factoryPrice,
+      cost_price: product.factoryPrice, // 寫入到現有的 cost_price 欄位
       agent_price: product.agentPrice,
       domestic_price: product.domesticPrice,
       overseas_price: product.overseasPrice,
@@ -123,7 +123,7 @@ export const databaseService = {
     if (product.category) formattedProduct.category = product.category;
     if (product.description) formattedProduct.description = product.description;
     if (product.tags) formattedProduct.tags = product.tags;
-    if (product.factoryPrice !== undefined) formattedProduct.factory_price = product.factoryPrice;
+    if (product.factoryPrice !== undefined) formattedProduct.cost_price = product.factoryPrice; // 寫入到現有的 cost_price 欄位
     if (product.agentPrice !== undefined) formattedProduct.agent_price = product.agentPrice;
     if (product.domesticPrice) formattedProduct.domestic_price = product.domesticPrice;
     if (product.overseasPrice) formattedProduct.overseas_price = product.overseasPrice;
