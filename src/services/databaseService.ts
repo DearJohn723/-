@@ -75,8 +75,8 @@ export const databaseService = {
       overseas_price: product.overseasPrice,
       stock: product.stock,
       size: product.size,
-      // weight: product.weight, // 暫時移除，避免資料庫欄位不存在報錯
-      // type: product.type,     // 暫時移除，避免資料庫欄位不存在報錯
+      weight: product.weight,
+      type: product.type,
       pieces: product.pieces,
       color: product.color,
       release_date: product.releaseDate,
@@ -129,8 +129,8 @@ export const databaseService = {
     if (product.overseasPrice) formattedProduct.overseas_price = product.overseasPrice;
     if (product.stock !== undefined) formattedProduct.stock = product.stock;
     if (product.size) formattedProduct.size = product.size;
-    // if (product.weight) formattedProduct.weight = product.weight;
-    // if (product.type) formattedProduct.type = product.type;
+    if (product.weight) formattedProduct.weight = product.weight;
+    if (product.type) formattedProduct.type = product.type;
     if (product.pieces !== undefined) formattedProduct.pieces = product.pieces;
     if (product.color) formattedProduct.color = product.color;
     if (product.releaseDate) formattedProduct.release_date = product.releaseDate;
