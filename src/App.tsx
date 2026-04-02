@@ -1082,6 +1082,33 @@ function UserManagementView() {
     }
   };
 
+  const handleDeleteUser = async (uid: string, email: string, role: string) => {
+    // 1. Protect main admin
+    if (email === 'john@greatidea.tw') {
+      alert('不能删除主管理员。');
+      return;
+    }
+
+    // 2. Ensure at least one admin remains
+    const adminCount = users.filter(u => u.role === 'admin').length;
+    if (role === 'admin' && adminCount <= 1) {
+      alert('必须保留至少一位管理员。');
+      return;
+    }
+
+    if (confirm(`确定要删除用户 ${email} 吗？`)) {
+      try {
+        await databaseService.deleteUserProfile(uid);
+        // Refresh list
+        const updatedUsers = await databaseService.getAllUserProfiles();
+        setUsers(updatedUsers);
+      } catch (err) {
+        console.error("Delete User Error:", err);
+        alert('删除用户失败');
+      }
+    }
+  };
+
   if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" /></div>;
 
   return (
@@ -1206,15 +1233,25 @@ function UserManagementView() {
                     {u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString() : new Date(u.createdAt).toLocaleDateString()) : 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-right sticky right-0 bg-white group-hover:bg-gray-50 z-10 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
-                    <select
-                      className="text-xs border border-gray-200 rounded-lg p-1 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      value={u.role}
-                      onChange={(e) => updateRole(u.uid, e.target.value as any)}
-                      disabled={u.email === 'john@greatidea.tw'} // Prevent demoting the main admin
-                    >
-                      <option value="viewer">设为浏览者</option>
-                      <option value="admin">设為管理員</option>
-                    </select>
+                    <div className="flex items-center justify-end gap-2">
+                      <select
+                        className="text-xs border border-gray-200 rounded-lg p-1 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        value={u.role}
+                        onChange={(e) => updateRole(u.uid, e.target.value as any)}
+                        disabled={u.email === 'john@greatidea.tw'} // Prevent demoting the main admin
+                      >
+                        <option value="viewer">设为浏览者</option>
+                        <option value="admin">设為管理員</option>
+                      </select>
+                      <button
+                        onClick={() => handleDeleteUser(u.uid, u.email, u.role)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        title="删除用户"
+                        disabled={u.email === 'john@greatidea.tw'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
