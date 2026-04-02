@@ -366,11 +366,11 @@ export default function App() {
 
               // Map spreadsheet columns to Product object
               const productData: any = {
-                productCode: String(row['产品编号'] || row['產品編號'] || '').trim(),
-                name: String(row['名称'] || row['名稱'] || '').trim(),
-                subName: String(row['子产品名称'] || row['子產品名稱'] || '').trim(),
+                productCode: String(row['产品编号'] || row['產品編號'] || '').trim() || `AUTO-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+                name: String(row['名称'] || row['名稱'] || '').trim().replace(/\r?\n|\r/g, ' '),
+                subName: String(row['子产品名称'] || row['子產品名稱'] || '').trim().replace(/\r?\n|\r/g, ' '),
                 category: String(row['分类'] || row['分類'] || '未分類').trim(),
-                description: String(row['描述'] || '').trim(),
+                description: String(row['描述'] || '').trim().replace(/\r?\n|\r/g, ' '),
                 size: String(row['尺寸'] || '').trim(),
                 pieces: Number(row['片数'] || row['片數']) || 0,
                 color: String(row['颜色'] || row['顏色'] || '').trim(),
@@ -389,8 +389,8 @@ export default function App() {
                 createdBy: user?.id || ''
               };
 
-              if (!productData.productCode || !productData.name) {
-                console.warn('Skipping row due to missing required fields:', row);
+              if (!productData.name) {
+                console.warn('Skipping row due to missing required name field:', row);
                 errorCount++;
                 continue;
               }
