@@ -640,6 +640,7 @@ export default function App() {
                           产品名称 {sortBy === 'name' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
                         </button>
                       </th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">预览</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">分类</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         <button 
@@ -683,6 +684,27 @@ export default function App() {
                                 </span>
                               ))}
                             </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-1">
+                            {product.photos && product.photos.length > 0 ? (
+                              <img 
+                                src={product.photos[0]} 
+                                alt={product.name} 
+                                className="w-10 h-10 object-cover rounded-lg border border-gray-100 shadow-sm"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
+                                <ImageIcon className="w-4 h-4 text-gray-300" />
+                              </div>
+                            )}
+                            {product.videos && product.videos.length > 0 && (
+                              <div className="w-10 h-10 bg-blue-50 rounded-lg border border-blue-100 flex items-center justify-center">
+                                <VideoIcon className="w-4 h-4 text-blue-400" />
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -1417,7 +1439,8 @@ function ProductModal({
           createdBy: user.uid,
         } as Product);
       }
-      onClose();
+      alert('产品已成功保存！');
+      window.location.reload();
     } catch (error) {
       console.error("Submit Error: ", error);
       alert('提交失败，请检查控制台。');
@@ -1703,12 +1726,22 @@ function ProductModal({
               </div>
               <div className="space-y-3">
                 {photoFields.map((field, index) => (
-                  <div key={field.id} className="flex gap-2">
+                  <div key={field.id} className="flex gap-2 items-center">
                     <input
                       {...register(`photos.${index}.url` as const)}
                       className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       placeholder="https://..."
                     />
+                    {watch(`photos.${index}.url`) && (
+                      <div className="w-10 h-10 rounded-lg border border-gray-100 overflow-hidden flex-shrink-0">
+                        <img 
+                          src={watch(`photos.${index}.url`)} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
                     <button 
                       type="button" 
                       onClick={() => removePhoto(index)}
@@ -1736,12 +1769,17 @@ function ProductModal({
               </div>
               <div className="space-y-3">
                 {videoFields.map((field, index) => (
-                  <div key={field.id} className="flex gap-2">
+                  <div key={field.id} className="flex gap-2 items-center">
                     <input
                       {...register(`videos.${index}.url` as const)}
                       className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                       placeholder="https://..."
                     />
+                    {watch(`videos.${index}.url`) && (
+                      <div className="w-10 h-10 rounded-lg border border-blue-100 bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <VideoIcon className="w-4 h-4 text-blue-400" />
+                      </div>
+                    )}
                     <button 
                       type="button" 
                       onClick={() => removeVideo(index)}

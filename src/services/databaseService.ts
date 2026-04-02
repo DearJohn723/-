@@ -82,7 +82,12 @@ export const databaseService = {
       created_by: product.createdBy,
     };
 
-    if (product.id) formattedProduct.id = product.id;
+    if (product.id) {
+      formattedProduct.id = product.id;
+    } else {
+      // Generate a new UUID if not provided
+      formattedProduct.id = crypto.randomUUID();
+    }
     if (product.createdAt) {
       formattedProduct.created_at = product.createdAt instanceof Date ? product.createdAt.toISOString() : product.createdAt;
     } else {
