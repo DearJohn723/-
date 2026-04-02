@@ -866,14 +866,44 @@ export default function App() {
                 <X className="w-5 h-5" />
               </button>
               <div className="aspect-video w-full bg-black flex items-center justify-center">
-                <video
-                  src={previewVideo}
-                  controls
-                  autoPlay
-                  className="max-w-full max-h-[80vh]"
-                >
-                  您的浏览器不支持视频播放。
-                </video>
+                {(() => {
+                  const url = previewVideo;
+                  let embedUrl = '';
+                  
+                  // YouTube
+                  const ytMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                  if (ytMatch) {
+                    embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+                  }
+                  
+                  // Vimeo
+                  const vimeoMatch = url.match(/(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(\d+)/);
+                  if (vimeoMatch) {
+                    embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
+                  }
+
+                  if (embedUrl) {
+                    return (
+                      <iframe
+                        src={embedUrl}
+                        className="w-full h-full"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      />
+                    );
+                  }
+
+                  return (
+                    <video
+                      src={url}
+                      controls
+                      autoPlay
+                      className="max-w-full max-h-[80vh]"
+                    >
+                      您的浏览器不支持视频播放。
+                    </video>
+                  );
+                })()}
               </div>
             </motion.div>
           </motion.div>
