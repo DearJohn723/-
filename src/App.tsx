@@ -617,7 +617,7 @@ export default function App() {
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">总销量</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">售价 (国内/海外)</th>
-                      {!isViewer && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">操作</th>}
+                      {!isViewer && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10 text-right shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">操作</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -672,25 +672,25 @@ export default function App() {
                           </div>
                         </td>
                         {!isViewer && (
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <td className="px-6 py-4 text-right sticky right-0 bg-white group-hover:bg-gray-50 z-10 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
+                            <div className="flex justify-end gap-1 sm:gap-2">
                               <button 
                                 onClick={() => handleCopy(product)}
-                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                                 title="复制产品"
                               >
                                 <Copy className="w-4 h-4" />
                               </button>
                               <button 
                                 onClick={() => openEditModal(product)}
-                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                                 title="编辑产品"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
                               <button 
                                 onClick={() => handleDelete(product.id)}
-                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                 title="删除产品"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1179,7 +1179,7 @@ function UserManagementView() {
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">邮箱</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">角色权限</th>
                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">注册时间</th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase text-right">操作</th>
+                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase text-right sticky right-0 bg-gray-50 z-10 shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -1205,15 +1205,15 @@ function UserManagementView() {
                   <td className="px-6 py-4 text-sm text-gray-400">
                     {u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString() : new Date(u.createdAt).toLocaleDateString()) : 'N/A'}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right sticky right-0 bg-white group-hover:bg-gray-50 z-10 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
                     <select
-                      className="text-xs border border-gray-200 rounded-lg p-1 outline-none focus:ring-2 focus:ring-blue-500"
+                      className="text-xs border border-gray-200 rounded-lg p-1 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       value={u.role}
                       onChange={(e) => updateRole(u.uid, e.target.value as any)}
                       disabled={u.email === 'john@greatidea.tw'} // Prevent demoting the main admin
                     >
                       <option value="viewer">设为浏览者</option>
-                      <option value="admin">设为管理员</option>
+                      <option value="admin">设為管理員</option>
                     </select>
                   </td>
                 </tr>
