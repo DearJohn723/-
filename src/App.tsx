@@ -649,23 +649,54 @@ export default function App() {
                           产品名称 {sortBy === 'name' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
                         </button>
                       </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">预览</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">分类</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">类型</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">重量</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         <button 
                           className="flex items-center gap-1 hover:text-blue-600 transition-colors"
                           onClick={() => {
-                            if (sortBy === 'stock') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                            else { setSortBy('stock'); setSortOrder('asc'); }
+                            if (sortBy === 'subName') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            else { setSortBy('subName'); setSortOrder('asc'); }
                           }}
                         >
-                          库存 {sortBy === 'stock' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                          子产品名称 {sortBy === 'subName' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
                         </button>
                       </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">总销量</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">售价 (国内/海外)</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">预览</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <button 
+                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                          onClick={() => {
+                            if (sortBy === 'category') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            else { setSortBy('category'); setSortOrder('asc'); }
+                          }}
+                        >
+                          分类 {sortBy === 'category' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                        </button>
+                      </th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">类型</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">重量</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">颜色</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <button 
+                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                          onClick={() => {
+                            if (sortBy === 'factoryPrice') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            else { setSortBy('factoryPrice'); setSortOrder('asc'); }
+                          }}
+                        >
+                          出厂价格 {sortBy === 'factoryPrice' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                        </button>
+                      </th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <button 
+                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                          onClick={() => {
+                            if (sortBy === 'overseasPrice') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                            else { setSortBy('overseasPrice'); setSortOrder('asc'); }
+                          }}
+                        >
+                          海外售价 {sortBy === 'overseasPrice' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                        </button>
+                      </th>
                       {!isViewer && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10 text-right shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">操作</th>}
                     </tr>
                   </thead>
@@ -681,11 +712,6 @@ export default function App() {
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-gray-900">{product.name}</span>
-                              {product.subName && (
-                                <span className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
-                                  {product.subName}
-                                </span>
-                              )}
                             </div>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {product.tags.map(tag => (
@@ -696,6 +722,9 @@ export default function App() {
                               ))}
                             </div>
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-600">{product.subName || '-'}</span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex gap-1">
@@ -733,23 +762,15 @@ export default function App() {
                           <span className="text-sm text-gray-600">{product.weight || '-'}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={cn(
-                            "text-sm font-semibold",
-                            product.stock <= 5 ? "text-red-600" : "text-gray-700"
-                          )}>
-                            {product.stock}
-                          </span>
+                          <span className="text-sm text-gray-600">{product.color || '-'}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
-                            <TrendingUp className="w-4 h-4" />
-                            {calculateTotalSales(product.monthlySales)}
-                          </div>
+                          <span className="text-sm font-medium text-gray-900">¥ {product.factoryPrice?.toLocaleString()}</span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col text-sm">
-                            <span className="text-gray-900">¥ {product.domesticPrice?.toLocaleString()}</span>
-                            <span className="text-gray-400 text-xs">US$ {product.overseasPrice?.toLocaleString()} (≈ ¥{(product.overseasPrice * exchangeRate).toFixed(2)})</span>
+                            <span className="text-gray-900">US$ {product.overseasPrice?.toLocaleString()}</span>
+                            <span className="text-gray-400 text-[10px]">≈ ¥{(product.overseasPrice * exchangeRate).toFixed(2)}</span>
                           </div>
                         </td>
                         {!isViewer && (
