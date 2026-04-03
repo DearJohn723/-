@@ -16,6 +16,8 @@ import {
   LogIn, 
   ChevronDown, 
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Image as ImageIcon,
   Video as VideoIcon,
   Tag as TagIcon,
@@ -100,8 +102,10 @@ export default function App() {
   const [sortBy, setSortBy] = useState<keyof Product>('updatedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [activeTab, setActiveTab] = useState<'products' | 'users'>('products');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  const [exchangeRate, setExchangeRate] = useState<number>(7.2); // Default fallback
+  const [exchangeRate, setExchangeRate] = useState<number>(7.2);
 
   // Fetch exchange rate
   useEffect(() => {
@@ -308,6 +312,18 @@ export default function App() {
         return 0;
       });
   }, [products, searchTerm, filterCategory, sortBy, sortOrder]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterCategory, sortBy, sortOrder]);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   const handleExport = (format: 'csv' | 'xlsx', selectedColumns: string[]) => {
     const dataToExport = filteredProducts.map(p => {
@@ -736,7 +752,7 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredProducts.map((product) => (
+                    {paginatedProducts.map((product) => (
                       <tr key={product.id} className="hover:bg-gray-50 transition-colors group">
                         <td className="px-6 py-4">
                           <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
@@ -839,13 +855,80 @@ export default function App() {
                     ))}
                     {filteredProducts.length === 0 && (
                       <tr>
-                        <td colSpan={isViewer ? 8 : 9} className="px-6 py-12 text-center text-gray-500">
+                        <td colSpan={isViewer ? 10 : 11} className="px-6 py-12 text-center text-gray-500">
                           找不到符合条件的产品
                         </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500">每页显示:</span>
+                  <select
+                    className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={30}>30</option>
+                  </select>
+                  <span className="text-sm text-gray-500 ml-2">
+                    顯示 {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredProducts.length)} 筆，共 {filteredProducts.length} 筆
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Show first, last, and pages around current
+                        return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                      })
+                      .map((page, index, array) => {
+                        const showEllipsis = index > 0 && page - array[index - 1] > 1;
+                        return (
+                          <React.Fragment key={page}>
+                            {showEllipsis && <span className="px-2 text-gray-400">...</span>}
+                            <button
+                              onClick={() => setCurrentPage(page)}
+                              className={cn(
+                                "w-8 h-8 rounded-lg text-sm font-medium transition-all",
+                                currentPage === page 
+                                  ? "bg-blue-600 text-white shadow-md shadow-blue-100" 
+                                  : "text-gray-600 hover:bg-gray-50 border border-transparent hover:border-gray-200"
+                              )}
+                            >
+                              {page}
+                            </button>
+                          </React.Fragment>
+                        );
+                      })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </>
