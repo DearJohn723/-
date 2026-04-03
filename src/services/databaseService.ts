@@ -25,13 +25,22 @@ export const databaseService = {
       category: p.category || '未分類',
       description: p.description || '',
       tags: p.tags || [],
-      factoryPrice: Number(p.cost_price || p.factory_price || 0), // 優先讀取舊有的 cost_price
-      agentPrice: Number(p.agent_price || 0),
+      factoryPrice: Number(p.cost_price || p.factory_price || 0),
+      agentPriceLevel1: Number(p.agent_price || 0),
+      agentPriceLevel2: Number(p.agent_price_level_2 || 0),
+      agentPriceLevel3: Number(p.agent_price_level_3 || 0),
+      dropshippingPrice: Number(p.dropshipping_price || 0),
       domesticPrice: Number(p.domestic_price || 0),
       overseasPrice: Number(p.overseas_price || 0),
       stock: p.stock || 0,
       size: p.size || '',
-      weight: p.weight || '',
+      netWeight: p.weight || '',
+      grossWeight: p.gross_weight || '',
+      packagingSize: p.packaging_size || '',
+      boxQuantity: p.box_quantity || 0,
+      shippingBoxSize: p.shipping_box_size || '',
+      shippingBoxWeight: p.shipping_box_weight || 0,
+      shippingBoxVolume: p.shipping_box_volume || 0,
       type: p.type || '',
       pieces: p.pieces || 0,
       color: p.color || '',
@@ -69,13 +78,22 @@ export const databaseService = {
       category: product.category,
       description: product.description,
       tags: product.tags,
-      cost_price: product.factoryPrice, // 寫入到現有的 cost_price 欄位
-      agent_price: product.agentPrice,
+      cost_price: product.factoryPrice,
+      agent_price: product.agentPriceLevel1,
+      agent_price_level_2: product.agentPriceLevel2,
+      agent_price_level_3: product.agentPriceLevel3,
+      dropshipping_price: product.dropshippingPrice,
       domestic_price: product.domesticPrice,
       overseas_price: product.overseasPrice,
       stock: product.stock,
       size: product.size,
-      weight: product.weight,
+      weight: product.netWeight,
+      gross_weight: product.grossWeight,
+      packaging_size: product.packagingSize,
+      box_quantity: product.boxQuantity,
+      shipping_box_size: product.shippingBoxSize,
+      shipping_box_weight: product.shippingBoxWeight,
+      shipping_box_volume: product.shippingBoxVolume,
       type: product.type,
       pieces: product.pieces,
       color: product.color,
@@ -123,13 +141,22 @@ export const databaseService = {
     if (product.category) formattedProduct.category = product.category;
     if (product.description) formattedProduct.description = product.description;
     if (product.tags) formattedProduct.tags = product.tags;
-    if (product.factoryPrice !== undefined) formattedProduct.cost_price = product.factoryPrice; // 寫入到現有的 cost_price 欄位
-    if (product.agentPrice !== undefined) formattedProduct.agent_price = product.agentPrice;
+    if (product.factoryPrice !== undefined) formattedProduct.cost_price = product.factoryPrice;
+    if (product.agentPriceLevel1 !== undefined) formattedProduct.agent_price = product.agentPriceLevel1;
+    if (product.agentPriceLevel2 !== undefined) formattedProduct.agent_price_level_2 = product.agentPriceLevel2;
+    if (product.agentPriceLevel3 !== undefined) formattedProduct.agent_price_level_3 = product.agentPriceLevel3;
+    if (product.dropshippingPrice !== undefined) formattedProduct.dropshipping_price = product.dropshippingPrice;
     if (product.domesticPrice) formattedProduct.domestic_price = product.domesticPrice;
     if (product.overseasPrice) formattedProduct.overseas_price = product.overseasPrice;
     if (product.stock !== undefined) formattedProduct.stock = product.stock;
     if (product.size) formattedProduct.size = product.size;
-    if (product.weight) formattedProduct.weight = product.weight;
+    if (product.netWeight) formattedProduct.weight = product.netWeight;
+    if (product.grossWeight) formattedProduct.gross_weight = product.grossWeight;
+    if (product.packagingSize) formattedProduct.packaging_size = product.packagingSize;
+    if (product.boxQuantity !== undefined) formattedProduct.box_quantity = product.boxQuantity;
+    if (product.shippingBoxSize) formattedProduct.shipping_box_size = product.shippingBoxSize;
+    if (product.shippingBoxWeight !== undefined) formattedProduct.shipping_box_weight = product.shippingBoxWeight;
+    if (product.shippingBoxVolume !== undefined) formattedProduct.shipping_box_volume = product.shippingBoxVolume;
     if (product.type) formattedProduct.type = product.type;
     if (product.pieces !== undefined) formattedProduct.pieces = product.pieces;
     if (product.color) formattedProduct.color = product.color;

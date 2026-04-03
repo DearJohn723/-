@@ -53,12 +53,21 @@ const productSchema = z.object({
   description: z.string().optional(),
   tags: z.string().optional(),
   factoryPrice: z.number().min(0, '出厂价格不能小于0'),
-  agentPrice: z.number().min(0).optional(),
+  agentPriceLevel1: z.number().min(0).optional(),
+  agentPriceLevel2: z.number().min(0).optional(),
+  agentPriceLevel3: z.number().min(0).optional(),
+  dropshippingPrice: z.number().min(0).optional(),
   domesticPrice: z.number().min(0).optional(),
   overseasPrice: z.number().min(0).optional(),
   stock: z.number().int().min(0, '库存不能小于0'),
   size: z.string().optional(),
-  weight: z.string().optional(),
+  netWeight: z.string().optional(),
+  grossWeight: z.string().optional(),
+  packagingSize: z.string().optional(),
+  boxQuantity: z.number().int().min(0).optional(),
+  shippingBoxSize: z.string().optional(),
+  shippingBoxWeight: z.number().min(0).optional(),
+  shippingBoxVolume: z.number().min(0).optional(),
   type: z.string().optional(),
   pieces: z.number().int().min(0).optional(),
   color: z.string().optional(),
@@ -314,9 +323,18 @@ export default function App() {
       if (selectedColumns.includes('上市日期')) row['上市日期'] = p.releaseDate;
       if (selectedColumns.includes('标签')) row['标签'] = p.tags.join(', ');
       if (selectedColumns.includes('类型')) row['类型'] = p.type || '';
-      if (selectedColumns.includes('重量')) row['重量'] = p.weight || '';
+      if (selectedColumns.includes('净重量')) row['净重量'] = p.netWeight || '';
+      if (selectedColumns.includes('带包装盒重量')) row['带包装盒重量'] = p.grossWeight || '';
+      if (selectedColumns.includes('包装盒尺寸')) row['包装盒尺寸'] = p.packagingSize || '';
+      if (selectedColumns.includes('装箱数量（盒）')) row['装箱数量（盒）'] = p.boxQuantity || 0;
+      if (selectedColumns.includes('发货外箱尺寸')) row['发货外箱尺寸'] = p.shippingBoxSize || '';
+      if (selectedColumns.includes('发货单箱重量（kg）')) row['发货单箱重量（kg）'] = p.shippingBoxWeight || 0;
+      if (selectedColumns.includes('发货单箱体积（m³）')) row['发货单箱体积（m³）'] = p.shippingBoxVolume || 0;
       if (selectedColumns.includes('出厂价格')) row['出厂价格'] = p.factoryPrice;
-      if (selectedColumns.includes('代理商价格')) row['代理商价格'] = p.agentPrice || 0;
+      if (selectedColumns.includes('代理商价格一級')) row['代理商价格一級'] = p.agentPriceLevel1 || 0;
+      if (selectedColumns.includes('代理商价格二級')) row['代理商价格二級'] = p.agentPriceLevel2 || 0;
+      if (selectedColumns.includes('代理商价格三級')) row['代理商价格三級'] = p.agentPriceLevel3 || 0;
+      if (selectedColumns.includes('一鍵代發價格')) row['一鍵代發價格'] = p.dropshippingPrice || 0;
       if (selectedColumns.includes('国内售价')) row['国内售价'] = p.domesticPrice || 0;
       if (selectedColumns.includes('海外售价')) row['海外售价'] = p.overseasPrice || 0;
       if (selectedColumns.includes('库存')) row['库存'] = p.stock;
@@ -385,9 +403,18 @@ export default function App() {
                 releaseDate: String(row['上市日期'] || '').trim(),
                 tags: row['标签'] || row['標籤'] ? String(row['标签'] || row['標籤']).split(',').map((t: string) => t.trim()).filter(Boolean) : [],
                 type: String(row['类型'] || row['類型'] || '').trim(),
-                weight: String(row['重量'] || '').trim(),
+                netWeight: String(row['净重量'] || row['淨重量'] || row['重量'] || '').trim(),
+                grossWeight: String(row['带包装盒重量'] || row['帶包裝盒重量'] || '').trim(),
+                packagingSize: String(row['包装盒尺寸'] || row['包裝盒尺寸'] || '').trim(),
+                boxQuantity: Number(row['装箱数量（盒）'] || row['裝箱數量（盒）']) || 0,
+                shippingBoxSize: String(row['发货外箱尺寸'] || row['發貨外箱尺寸'] || '').trim(),
+                shippingBoxWeight: Number(row['发货单箱重量（kg）'] || row['發貨單箱重量（kg）']) || 0,
+                shippingBoxVolume: Number(row['发货单箱体积（m³）'] || row['發貨單箱體積（m³）']) || 0,
                 factoryPrice: Number(row['出厂价格'] || row['出廠價格'] || row['成本价格'] || row['成本價格']) || 0,
-                agentPrice: Number(row['代理商价格'] || row['代理商價格']) || 0,
+                agentPriceLevel1: Number(row['代理商价格一級'] || row['代理商價格一級'] || row['代理商价格'] || row['代理商價格']) || 0,
+                agentPriceLevel2: Number(row['代理商价格二級'] || row['代理商價格二級']) || 0,
+                agentPriceLevel3: Number(row['代理商价格三級'] || row['代理商價格三級']) || 0,
+                dropshippingPrice: Number(row['一鍵代發價格'] || row['一键代发价格']) || 0,
                 domesticPrice: Number(row['国内售价'] || row['國內售價']) || 0,
                 overseasPrice: Math.round(Number(row['海外售价'] || row['海外售價'] || 0)),
                 stock: Number(row['库存'] || row['庫存']) || 0,
@@ -681,7 +708,7 @@ export default function App() {
                         </button>
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">类型</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">重量</th>
+                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">净重量</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">颜色</th>
                       <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         <button 
@@ -767,7 +794,7 @@ export default function App() {
                           <span className="text-sm text-gray-600">{product.type || '-'}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-sm text-gray-600">{product.weight || '-'}</span>
+                          <span className="text-sm text-gray-600">{product.netWeight || '-'}</span>
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-sm text-gray-600">{product.color || '-'}</span>
@@ -958,8 +985,10 @@ export default function App() {
 }
 
 const EXPORT_COLUMNS = [
-  '产品编号', '名称', '子产品名称', '分类', '描述', '尺寸', '片数', '颜色', '上市日期', '标签', '类型', '重量',
-  '出厂价格', '代理商价格', '国内售价', '海外售价', '库存', '总销量', '图片链接', '视频链接', '建立时间'
+  '产品编号', '名称', '子产品名称', '分类', '描述', '尺寸', '片数', '颜色', '上市日期', '标签', '类型', 
+  '净重量', '带包装盒重量', '包装盒尺寸', '装箱数量（盒）', '发货外箱尺寸', '发货单箱重量（kg）', '发货单箱体积（m³）',
+  '出厂价格', '代理商价格一級', '代理商价格二級', '代理商价格三級', '一鍵代發價格', '国内售价', '海外售价', 
+  '库存', '总销量', '图片链接', '视频链接', '建立时间'
 ];
 
 function ExportModal({ onClose, onExport }: { onClose: () => void, onExport: (format: 'csv' | 'xlsx', columns: string[]) => void }) {
@@ -1494,9 +1523,18 @@ function ProductModal({
       description: product.description,
       tags: product.tags.join(', '),
       type: product.type || '',
-      weight: product.weight || '',
+      netWeight: product.netWeight || '',
+      grossWeight: product.grossWeight || '',
+      packagingSize: product.packagingSize || '',
+      boxQuantity: product.boxQuantity || 0,
+      shippingBoxSize: product.shippingBoxSize || '',
+      shippingBoxWeight: product.shippingBoxWeight || 0,
+      shippingBoxVolume: product.shippingBoxVolume || 0,
       factoryPrice: product.factoryPrice,
-      agentPrice: product.agentPrice,
+      agentPriceLevel1: product.agentPriceLevel1,
+      agentPriceLevel2: product.agentPriceLevel2,
+      agentPriceLevel3: product.agentPriceLevel3,
+      dropshippingPrice: product.dropshippingPrice,
       domesticPrice: product.domesticPrice,
       overseasPrice: product.overseasPrice,
       stock: product.stock,
@@ -1514,8 +1552,18 @@ function ProductModal({
       category: '',
       stock: 0,
       type: '',
-      weight: '',
+      netWeight: '',
+      grossWeight: '',
+      packagingSize: '',
+      boxQuantity: 0,
+      shippingBoxSize: '',
+      shippingBoxWeight: 0,
+      shippingBoxVolume: 0,
       factoryPrice: 0,
+      agentPriceLevel1: 0,
+      agentPriceLevel2: 0,
+      agentPriceLevel3: 0,
+      dropshippingPrice: 0,
       monthlySales: [],
       photos: [],
       videos: []
@@ -1695,12 +1743,80 @@ function ProductModal({
 
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Weight className="w-4 h-4" /> 重量
+                  <Weight className="w-4 h-4" /> 净重量
                 </label>
                 <input
-                  {...register('weight')}
+                  {...register('netWeight')}
                   className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                   placeholder="例如: 500g"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Weight className="w-4 h-4" /> 带包装盒重量
+                </label>
+                <input
+                  {...register('grossWeight')}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="例如: 600g"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Maximize className="w-4 h-4" /> 包装盒尺寸
+                </label>
+                <input
+                  {...register('packagingSize')}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="例如: 15x10x5cm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Layers className="w-4 h-4" /> 装箱数量（盒）
+                </label>
+                <input
+                  type="number"
+                  {...register('boxQuantity', { valueAsNumber: true })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Maximize className="w-4 h-4" /> 发货外箱尺寸
+                </label>
+                <input
+                  {...register('shippingBoxSize')}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="例如: 60x40x40cm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Weight className="w-4 h-4" /> 发货单箱重量（kg）
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  {...register('shippingBoxWeight', { valueAsNumber: true })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Maximize className="w-4 h-4" /> 发货单箱体积（m³）
+                </label>
+                <input
+                  type="number"
+                  step="0.001"
+                  {...register('shippingBoxVolume', { valueAsNumber: true })}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
@@ -1834,8 +1950,20 @@ function ProductModal({
                 {errors.factoryPrice && <p className="text-[10px] text-red-500">{errors.factoryPrice.message}</p>}
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500">代理商价格</label>
-                <input type="number" {...register('agentPrice', { valueAsNumber: true })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                <label className="text-xs font-medium text-gray-500">代理商价格一級</label>
+                <input type="number" {...register('agentPriceLevel1', { valueAsNumber: true })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">代理商价格二級</label>
+                <input type="number" {...register('agentPriceLevel2', { valueAsNumber: true })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">代理商价格三級</label>
+                <input type="number" {...register('agentPriceLevel3', { valueAsNumber: true })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">一鍵代發價格</label>
+                <input type="number" {...register('dropshippingPrice', { valueAsNumber: true })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-500">国内售价</label>
