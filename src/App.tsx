@@ -426,17 +426,20 @@ export default function App() {
           
           if (cell && cell.v && typeof cell.v === 'string') {
             const trimmedValue = cell.v.trim();
-            if (trimmedValue.startsWith('http')) {
-              // If multiple links, take the first one for the hyperlink target
-              const firstLink = trimmedValue.split(';')[0].trim();
-              const viewLink = convertToViewLink(firstLink);
-              
-              // Ensure cell is an object and set hyperlink
-              ws[cell_ref] = {
-                t: 's',
-                v: cell.v,
-                l: { Target: viewLink, Tooltip: '點擊查看' }
-              };
+            if (trimmedValue.includes('http')) {
+              // Find the first URL in the string
+              const match = trimmedValue.match(/https?:\/\/[^\s;]+/);
+              if (match) {
+                const firstLink = match[0];
+                const viewLink = convertToViewLink(firstLink);
+                
+                // Ensure cell is an object and set hyperlink
+                ws[cell_ref] = {
+                  t: 's',
+                  v: cell.v,
+                  l: { Target: viewLink, Tooltip: '點擊查看' }
+                };
+              }
             }
           }
         }
@@ -446,14 +449,17 @@ export default function App() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Products');
 
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+
     if (format === 'xlsx') {
-      XLSX.writeFile(wb, `products_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(wb, `products_export_${dateStr}.xlsx`);
     } else {
       const csv = XLSX.utils.sheet_to_csv(ws);
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `products_export_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `products_export_${dateStr}.csv`;
       link.click();
     }
   };
