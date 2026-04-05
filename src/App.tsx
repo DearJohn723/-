@@ -366,6 +366,40 @@ export default function App() {
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     
+    // Helper to convert common download links to view links
+    const convertToViewLink = (url: string): string => {
+      try {
+        const urlObj = new URL(url);
+        
+        // Google Drive: Convert /uc?id=... or /open?id=... to /file/d/.../view
+        if (urlObj.hostname.includes('drive.google.com')) {
+          const id = urlObj.searchParams.get('id');
+          if (id && (urlObj.pathname.includes('/uc') || urlObj.pathname.includes('/open'))) {
+            return `https://drive.google.com/file/d/${id}/view`;
+          }
+        }
+        
+        // Dropbox: Convert dl=1 to dl=0
+        if (urlObj.hostname.includes('dropbox.com')) {
+          if (urlObj.searchParams.get('dl') === '1') {
+            urlObj.searchParams.set('dl', '0');
+            return urlObj.toString();
+          }
+        }
+
+        // General: remove download param if exists
+        if (urlObj.searchParams.has('download')) {
+          const newUrl = new URL(url);
+          newUrl.searchParams.delete('download');
+          return newUrl.toString();
+        }
+
+        return url;
+      } catch (e) {
+        return url;
+      }
+    };
+
     // Add hyperlinks for image and video columns
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
     const headers: string[] = [];
@@ -383,7 +417,8 @@ export default function App() {
           if (cell && cell.v && typeof cell.v === 'string' && cell.v.startsWith('http')) {
             // If multiple links, take the first one for the hyperlink target
             const firstLink = cell.v.split('; ')[0];
-            cell.l = { Target: firstLink, Tooltip: firstLink };
+            const viewLink = convertToViewLink(firstLink);
+            cell.l = { Target: viewLink, Tooltip: '點擊查看' };
           }
         }
       }
