@@ -365,6 +365,30 @@ export default function App() {
     });
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);
+    
+    // Add hyperlinks for image and video columns
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    const headers: string[] = [];
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const header_ref = XLSX.utils.encode_cell({ c: C, r: range.s.r });
+      headers[C] = ws[header_ref]?.v;
+    }
+
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const header = headers[C];
+        if (header === '图片链接' || header === '视频链接') {
+          const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
+          const cell = ws[cell_ref];
+          if (cell && cell.v && typeof cell.v === 'string' && cell.v.startsWith('http')) {
+            // If multiple links, take the first one for the hyperlink target
+            const firstLink = cell.v.split('; ')[0];
+            cell.l = { Target: firstLink, Tooltip: firstLink };
+          }
+        }
+      }
+    }
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Products');
 
