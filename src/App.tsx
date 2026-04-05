@@ -355,8 +355,8 @@ export default function App() {
       if (selectedColumns.includes('海外售价')) row['海外售价'] = p.overseasPrice || 0;
       if (selectedColumns.includes('库存')) row['库存'] = p.stock;
       if (selectedColumns.includes('总销量')) row['总销量'] = calculateTotalSales(p.monthlySales);
-      if (selectedColumns.includes('图片链接')) row['图片链接'] = p.photos.join('; ');
-      if (selectedColumns.includes('视频链接')) row['视频链接'] = p.videos.join('; ');
+      if (selectedColumns.includes('图片链接') || selectedColumns.includes('圖片連結')) row['图片链接'] = p.photos.join('; ');
+      if (selectedColumns.includes('视频链接') || selectedColumns.includes('視頻連結')) row['视频链接'] = p.videos.join('; ');
       if (selectedColumns.includes('建立时间')) {
         const date = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
         row['建立时间'] = date.toLocaleString();
@@ -369,13 +369,23 @@ export default function App() {
     // Helper to convert common download links to view links
     const convertToViewLink = (url: string): string => {
       try {
-        const urlObj = new URL(url);
+        const trimmedUrl = url.trim();
+        const urlObj = new URL(trimmedUrl);
         
-        // Google Drive: Convert /uc?id=... or /open?id=... to /file/d/.../view
+        // Google Drive
         if (urlObj.hostname.includes('drive.google.com')) {
+          // Case: /uc?id=... or /open?id=...
           const id = urlObj.searchParams.get('id');
           if (id && (urlObj.pathname.includes('/uc') || urlObj.pathname.includes('/open'))) {
             return `https://drive.google.com/file/d/${id}/view`;
+          }
+          // Case: /file/d/ID/view or /file/d/ID/edit
+          if (urlObj.pathname.includes('/file/d/')) {
+            const parts = urlObj.pathname.split('/');
+            const dIndex = parts.indexOf('d');
+            if (dIndex !== -1 && parts[dIndex + 1]) {
+              return `https://drive.google.com/file/d/${parts[dIndex + 1]}/view`;
+            }
           }
         }
         
@@ -389,14 +399,13 @@ export default function App() {
 
         // General: remove download param if exists
         if (urlObj.searchParams.has('download')) {
-          const newUrl = new URL(url);
-          newUrl.searchParams.delete('download');
-          return newUrl.toString();
+          urlObj.searchParams.delete('download');
+          return urlObj.toString();
         }
 
-        return url;
+        return trimmedUrl;
       } catch (e) {
-        return url;
+        return url.trim();
       }
     };
 
@@ -411,14 +420,24 @@ export default function App() {
     for (let R = range.s.r + 1; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const header = headers[C];
-        if (header === '图片链接' || header === '视频链接') {
+        if (header === '图片链接' || header === '视频链接' || header === '圖片連結' || header === '視頻連結') {
           const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
           const cell = ws[cell_ref];
-          if (cell && cell.v && typeof cell.v === 'string' && cell.v.startsWith('http')) {
-            // If multiple links, take the first one for the hyperlink target
-            const firstLink = cell.v.split('; ')[0];
-            const viewLink = convertToViewLink(firstLink);
-            cell.l = { Target: viewLink, Tooltip: '點擊查看' };
+          
+          if (cell && cell.v && typeof cell.v === 'string') {
+            const trimmedValue = cell.v.trim();
+            if (trimmedValue.startsWith('http')) {
+              // If multiple links, take the first one for the hyperlink target
+              const firstLink = trimmedValue.split(';')[0].trim();
+              const viewLink = convertToViewLink(firstLink);
+              
+              // Ensure cell is an object and set hyperlink
+              ws[cell_ref] = {
+                t: 's',
+                v: cell.v,
+                l: { Target: viewLink, Tooltip: '點擊查看' }
+              };
+            }
           }
         }
       }
