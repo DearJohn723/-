@@ -1188,7 +1188,7 @@ function ExportModal({ onClose, onExport }: { onClose: () => void, onExport: (fo
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       >
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">导出设置</h2>
@@ -1197,7 +1197,7 @@ function ExportModal({ onClose, onExport }: { onClose: () => void, onExport: (fo
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700">选择要导出的栏位</span>
             <button 
@@ -1208,7 +1208,7 @@ function ExportModal({ onClose, onExport }: { onClose: () => void, onExport: (fo
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {EXPORT_COLUMNS.map(col => (
               <label key={col} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                 <input 
@@ -1217,7 +1217,7 @@ function ExportModal({ onClose, onExport }: { onClose: () => void, onExport: (fo
                   onChange={() => toggleColumn(col)}
                   className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-600">{col}</span>
+                <span className="text-sm text-gray-600 truncate" title={col}>{col}</span>
               </label>
             ))}
           </div>
