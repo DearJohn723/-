@@ -39,7 +39,8 @@ import {
   User as UserIcon,
   LayoutDashboard,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -93,6 +94,7 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isColumnSettingsOpen, setIsColumnSettingsOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -104,6 +106,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'products' | 'users'>('products');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
+    const saved = localStorage.getItem('visibleColumns');
+    return saved ? JSON.parse(saved) : DEFAULT_VISIBLE_COLUMNS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('visibleColumns', JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
 
   const [exchangeRate, setExchangeRate] = useState<number>(7.2);
 
@@ -742,6 +752,14 @@ export default function App() {
                       <Download className="w-4 h-4" />
                       导出 Excel
                     </button>
+                    <button
+                      onClick={() => setIsColumnSettingsOpen(true)}
+                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
+                      title="列表显示设置"
+                    >
+                      <Settings className="w-4 h-4" />
+                      显示设置
+                    </button>
                   </>
                 )}
                 {!isViewer && (
@@ -762,152 +780,210 @@ export default function App() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <button 
-                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                          onClick={() => {
-                            if (sortBy === 'productCode') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                            else { setSortBy('productCode'); setSortOrder('asc'); }
-                          }}
-                        >
-                          产品编号 {sortBy === 'productCode' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                        </button>
-                      </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <button 
-                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                          onClick={() => {
-                            if (sortBy === 'name') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                            else { setSortBy('name'); setSortOrder('asc'); }
-                          }}
-                        >
-                          产品名称 {sortBy === 'name' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                        </button>
-                      </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <button 
-                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                          onClick={() => {
-                            if (sortBy === 'subName') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                            else { setSortBy('subName'); setSortOrder('asc'); }
-                          }}
-                        >
-                          子产品名称 {sortBy === 'subName' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                        </button>
-                      </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">预览</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <button 
-                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                          onClick={() => {
-                            if (sortBy === 'category') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                            else { setSortBy('category'); setSortOrder('asc'); }
-                          }}
-                        >
-                          分类 {sortBy === 'category' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                        </button>
-                      </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">类型</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">净重量</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">颜色</th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <button 
-                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                          onClick={() => {
-                            if (sortBy === 'factoryPrice') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                            else { setSortBy('factoryPrice'); setSortOrder('asc'); }
-                          }}
-                        >
-                          出厂价格 {sortBy === 'factoryPrice' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                        </button>
-                      </th>
-                      <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <button 
-                          className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                          onClick={() => {
-                            if (sortBy === 'overseasPrice') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                            else { setSortBy('overseasPrice'); setSortOrder('asc'); }
-                          }}
-                        >
-                          海外售价 {sortBy === 'overseasPrice' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                        </button>
-                      </th>
+                      {visibleColumns.includes('productCode') && (
+                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <button 
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                            onClick={() => {
+                              if (sortBy === 'productCode') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                              else { setSortBy('productCode'); setSortOrder('asc'); }
+                            }}
+                          >
+                            产品编号 {sortBy === 'productCode' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                          </button>
+                        </th>
+                      )}
+                      {visibleColumns.includes('name') && (
+                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <button 
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                            onClick={() => {
+                              if (sortBy === 'name') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                              else { setSortBy('name'); setSortOrder('asc'); }
+                            }}
+                          >
+                            产品名称 {sortBy === 'name' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                          </button>
+                        </th>
+                      )}
+                      {visibleColumns.includes('subName') && (
+                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <button 
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                            onClick={() => {
+                              if (sortBy === 'subName') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                              else { setSortBy('subName'); setSortOrder('asc'); }
+                            }}
+                          >
+                            子产品名称 {sortBy === 'subName' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                          </button>
+                        </th>
+                      )}
+                      {visibleColumns.includes('preview') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">预览</th>}
+                      {visibleColumns.includes('category') && (
+                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <button 
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                            onClick={() => {
+                              if (sortBy === 'category') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                              else { setSortBy('category'); setSortOrder('asc'); }
+                            }}
+                          >
+                            分类 {sortBy === 'category' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                          </button>
+                        </th>
+                      )}
+                      {visibleColumns.includes('type') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">类型</th>}
+                      {visibleColumns.includes('netWeight') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">净重量</th>}
+                      {visibleColumns.includes('color') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">颜色</th>}
+                      {visibleColumns.includes('factoryPrice') && (
+                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <button 
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                            onClick={() => {
+                              if (sortBy === 'factoryPrice') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                              else { setSortBy('factoryPrice'); setSortOrder('asc'); }
+                            }}
+                          >
+                            出厂价格 {sortBy === 'factoryPrice' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                          </button>
+                        </th>
+                      )}
+                      {visibleColumns.includes('overseasPrice') && (
+                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <button 
+                            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                            onClick={() => {
+                              if (sortBy === 'overseasPrice') setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                              else { setSortBy('overseasPrice'); setSortOrder('asc'); }
+                            }}
+                          >
+                            海外售价 {sortBy === 'overseasPrice' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                          </button>
+                        </th>
+                      )}
+                      {visibleColumns.includes('stock') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">库存</th>}
+                      {visibleColumns.includes('totalSales') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">总销量</th>}
+                      {visibleColumns.includes('releaseDate') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">上市日期</th>}
+                      {visibleColumns.includes('createdAt') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">建立时间</th>}
                       {!isViewer && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10 text-right shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">操作</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {paginatedProducts.map((product) => (
                       <tr key={product.id} className="hover:bg-gray-50 transition-colors group">
-                        <td className="px-6 py-4">
-                          <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                            {product.productCode}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">{product.name}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {product.tags.map(tag => (
-                                <span key={tag} className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                                  <TagIcon className="w-2 h-2" />
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-gray-600">{product.subName || '-'}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex gap-1">
-                            {product.photos && product.photos.length > 0 ? (
-                              <img 
-                                src={product.photos[0]} 
-                                alt={product.name} 
-                                onClick={() => setPreviewImage(product.photos[0])}
-                                className="w-10 h-10 object-cover rounded-lg border border-gray-100 shadow-sm cursor-zoom-in hover:scale-105 transition-transform"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
-                                <ImageIcon className="w-4 h-4 text-gray-300" />
+                        {visibleColumns.includes('productCode') && (
+                          <td className="px-6 py-4">
+                            <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                              {product.productCode}
+                            </span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('name') && (
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-900">{product.name}</span>
                               </div>
-                            )}
-                            {product.videos && product.videos.length > 0 && (
-                              <div 
-                                className="w-10 h-10 bg-blue-50 rounded-lg border border-blue-100 flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors"
-                                onClick={() => setPreviewVideo(product.videos[0])}
-                                title="播放视频"
-                              >
-                                <VideoIcon className="w-4 h-4 text-blue-400" />
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {product.tags.map(tag => (
+                                  <span key={tag} className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                                    <TagIcon className="w-2 h-2" />
+                                    {tag}
+                                  </span>
+                                ))}
                               </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-gray-600">{product.category}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-gray-600">{product.type || '-'}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-gray-600">{product.netWeight || '-'}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-gray-600">{product.color || '-'}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-medium text-gray-900">¥ {product.factoryPrice?.toLocaleString()}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col text-sm">
-                            <span className="text-gray-900">US$ {Math.round(product.overseasPrice || 0).toLocaleString()}</span>
-                            <span className="text-gray-400 text-[10px]">≈ ¥{(Math.round(product.overseasPrice || 0) * exchangeRate).toFixed(2)}</span>
-                          </div>
-                        </td>
+                            </div>
+                          </td>
+                        )}
+                        {visibleColumns.includes('subName') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.subName || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('preview') && (
+                          <td className="px-6 py-4">
+                            <div className="flex gap-1">
+                              {product.photos && product.photos.length > 0 ? (
+                                <img 
+                                  src={product.photos[0]} 
+                                  alt={product.name} 
+                                  onClick={() => setPreviewImage(product.photos[0])}
+                                  className="w-10 h-10 object-cover rounded-lg border border-gray-100 shadow-sm cursor-zoom-in hover:scale-105 transition-transform"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
+                                  <ImageIcon className="w-4 h-4 text-gray-300" />
+                                </div>
+                              )}
+                              {product.videos && product.videos.length > 0 && (
+                                <div 
+                                  className="w-10 h-10 bg-blue-50 rounded-lg border border-blue-100 flex items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors"
+                                  onClick={() => setPreviewVideo(product.videos[0])}
+                                  title="播放视频"
+                                >
+                                  <VideoIcon className="w-4 h-4 text-blue-400" />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                        {visibleColumns.includes('category') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.category}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('type') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.type || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('netWeight') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.netWeight || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('color') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.color || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('factoryPrice') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm font-medium text-gray-900">¥ {product.factoryPrice?.toLocaleString()}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('overseasPrice') && (
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col text-sm">
+                              <span className="text-gray-900">US$ {Math.round(product.overseasPrice || 0).toLocaleString()}</span>
+                              <span className="text-gray-400 text-[10px]">≈ ¥{(Math.round(product.overseasPrice || 0) * exchangeRate).toFixed(2)}</span>
+                            </div>
+                          </td>
+                        )}
+                        {visibleColumns.includes('stock') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.stock}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('totalSales') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{calculateTotalSales(product.monthlySales)}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('releaseDate') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.releaseDate || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('createdAt') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">
+                              {product.createdAt?.toDate ? product.createdAt.toDate().toLocaleString() : new Date(product.createdAt).toLocaleString()}
+                            </span>
+                          </td>
+                        )}
                         {!isViewer && (
                           <td className="px-6 py-4 text-right sticky right-0 bg-white group-hover:bg-gray-50 z-10 transition-colors shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">
                             <div className="flex justify-end gap-1 sm:gap-2">
@@ -939,7 +1015,7 @@ export default function App() {
                     ))}
                     {filteredProducts.length === 0 && (
                       <tr>
-                        <td colSpan={isViewer ? 10 : 11} className="px-6 py-12 text-center text-gray-500">
+                        <td colSpan={visibleColumns.length + (isViewer ? 0 : 1)} className="px-6 py-12 text-center text-gray-500">
                           找不到符合条件的产品
                         </td>
                       </tr>
@@ -1042,6 +1118,13 @@ export default function App() {
               handleExport(format, columns);
               setIsExportModalOpen(false);
             }}
+          />
+        )}
+        {isColumnSettingsOpen && (
+          <ColumnSettingsModal
+            onClose={() => setIsColumnSettingsOpen(false)}
+            visibleColumns={visibleColumns}
+            setVisibleColumns={setVisibleColumns}
           />
         )}
       </AnimatePresence>
@@ -1158,6 +1241,27 @@ const EXPORT_COLUMNS = [
   '库存', '总销量', '图片链接', '视频链接', '建立时间'
 ];
 
+const ALL_LIST_COLUMNS = [
+  { id: 'productCode', label: '产品编号' },
+  { id: 'name', label: '产品名称' },
+  { id: 'subName', label: '子产品名称' },
+  { id: 'preview', label: '预览' },
+  { id: 'category', label: '分类' },
+  { id: 'type', label: '类型' },
+  { id: 'netWeight', label: '净重量' },
+  { id: 'color', label: '颜色' },
+  { id: 'factoryPrice', label: '出厂价格' },
+  { id: 'overseasPrice', label: '海外售价' },
+  { id: 'stock', label: '库存' },
+  { id: 'totalSales', label: '总销量' },
+  { id: 'releaseDate', label: '上市日期' },
+  { id: 'createdAt', label: '建立时间' },
+];
+
+const DEFAULT_VISIBLE_COLUMNS = [
+  'productCode', 'name', 'subName', 'preview', 'category', 'type', 'netWeight', 'color', 'factoryPrice', 'overseasPrice'
+];
+
 function ExportModal({ onClose, onExport }: { onClose: () => void, onExport: (format: 'csv' | 'xlsx', columns: string[]) => void }) {
   const [selectedColumns, setSelectedColumns] = useState<string[]>(EXPORT_COLUMNS);
 
@@ -1243,6 +1347,92 @@ function ExportModal({ onClose, onExport }: { onClose: () => void, onExport: (fo
             className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-50"
           >
             导出 Excel
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function ColumnSettingsModal({ 
+  onClose, 
+  visibleColumns, 
+  setVisibleColumns 
+}: { 
+  onClose: () => void, 
+  visibleColumns: string[], 
+  setVisibleColumns: (cols: string[]) => void 
+}) {
+  const toggleColumn = (colId: string) => {
+    setVisibleColumns(
+      visibleColumns.includes(colId) 
+        ? visibleColumns.filter(c => c !== colId) 
+        : [...visibleColumns, colId]
+    );
+  };
+
+  const toggleAll = () => {
+    if (visibleColumns.length === ALL_LIST_COLUMNS.length) {
+      setVisibleColumns([]);
+    } else {
+      setVisibleColumns(ALL_LIST_COLUMNS.map(c => c.id));
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+      >
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900">列表显示设置</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">选择要在列表中显示的栏位</span>
+            <button 
+              onClick={toggleAll}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              {visibleColumns.length === ALL_LIST_COLUMNS.length ? '取消全选' : '全选'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {ALL_LIST_COLUMNS.map(col => (
+              <label key={col.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={visibleColumns.includes(col.id)}
+                  onChange={() => toggleColumn(col.id)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-600">{col.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+          >
+            完成
           </button>
         </div>
       </motion.div>
