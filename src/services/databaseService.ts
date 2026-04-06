@@ -128,42 +128,45 @@ export const databaseService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Add Product Error:', error);
+      throw error;
+    }
     return data as Product;
   },
 
   async updateProduct(id: string, product: Partial<Product>) {
     if (!supabase) throw new Error('Supabase not configured');
     const formattedProduct: any = {};
-    if (product.productCode) formattedProduct.product_code = product.productCode;
-    if (product.name) formattedProduct.name = product.name;
-    if (product.subName) formattedProduct.sub_name = product.subName;
-    if (product.category) formattedProduct.category = product.category;
-    if (product.description) formattedProduct.description = product.description;
-    if (product.tags) formattedProduct.tags = product.tags;
+    if (product.productCode !== undefined) formattedProduct.product_code = product.productCode;
+    if (product.name !== undefined) formattedProduct.name = product.name;
+    if (product.subName !== undefined) formattedProduct.sub_name = product.subName;
+    if (product.category !== undefined) formattedProduct.category = product.category;
+    if (product.description !== undefined) formattedProduct.description = product.description;
+    if (product.tags !== undefined) formattedProduct.tags = product.tags;
     if (product.factoryPrice !== undefined) formattedProduct.cost_price = product.factoryPrice;
     if (product.agentPriceLevel1 !== undefined) formattedProduct.agent_price = product.agentPriceLevel1;
     if (product.agentPriceLevel2 !== undefined) formattedProduct.agent_price_level_2 = product.agentPriceLevel2;
     if (product.agentPriceLevel3 !== undefined) formattedProduct.agent_price_level_3 = product.agentPriceLevel3;
     if (product.dropshippingPrice !== undefined) formattedProduct.dropshipping_price = product.dropshippingPrice;
-    if (product.domesticPrice) formattedProduct.domestic_price = product.domesticPrice;
-    if (product.overseasPrice) formattedProduct.overseas_price = product.overseasPrice;
+    if (product.domesticPrice !== undefined) formattedProduct.domestic_price = product.domesticPrice;
+    if (product.overseasPrice !== undefined) formattedProduct.overseas_price = product.overseasPrice;
     if (product.stock !== undefined) formattedProduct.stock = product.stock;
-    if (product.size) formattedProduct.size = product.size;
-    if (product.netWeight) formattedProduct.weight = product.netWeight;
-    if (product.grossWeight) formattedProduct.gross_weight = product.grossWeight;
-    if (product.packagingSize) formattedProduct.packaging_size = product.packagingSize;
+    if (product.size !== undefined) formattedProduct.size = product.size;
+    if (product.netWeight !== undefined) formattedProduct.weight = product.netWeight;
+    if (product.grossWeight !== undefined) formattedProduct.gross_weight = product.grossWeight;
+    if (product.packagingSize !== undefined) formattedProduct.packaging_size = product.packagingSize;
     if (product.boxQuantity !== undefined) formattedProduct.box_quantity = product.boxQuantity;
-    if (product.shippingBoxSize) formattedProduct.shipping_box_size = product.shippingBoxSize;
+    if (product.shippingBoxSize !== undefined) formattedProduct.shipping_box_size = product.shippingBoxSize;
     if (product.shippingBoxWeight !== undefined) formattedProduct.shipping_box_weight = product.shippingBoxWeight;
     if (product.shippingBoxVolume !== undefined) formattedProduct.shipping_box_volume = product.shippingBoxVolume;
-    if (product.type) formattedProduct.type = product.type;
+    if (product.type !== undefined) formattedProduct.type = product.type;
     if (product.pieces !== undefined) formattedProduct.pieces = product.pieces;
-    if (product.color) formattedProduct.color = product.color;
-    if (product.releaseDate) formattedProduct.release_date = product.releaseDate;
-    if (product.monthlySales) formattedProduct.monthly_sales = product.monthlySales;
-    if (product.photos) formattedProduct.photos = product.photos;
-    if (product.videos) formattedProduct.videos = product.videos;
+    if (product.color !== undefined) formattedProduct.color = product.color;
+    if (product.releaseDate !== undefined) formattedProduct.release_date = product.releaseDate;
+    if (product.monthlySales !== undefined) formattedProduct.monthly_sales = product.monthlySales;
+    if (product.photos !== undefined) formattedProduct.photos = product.photos;
+    if (product.videos !== undefined) formattedProduct.videos = product.videos;
     formattedProduct.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
@@ -173,7 +176,10 @@ export const databaseService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Update Product Error:', error);
+      throw error;
+    }
     return data as Product;
   },
 

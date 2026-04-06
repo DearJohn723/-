@@ -106,6 +106,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'products' | 'users'>('products');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [supabaseStatus, setSupabaseStatus] = useState<'checking' | 'connected' | 'error' | 'not-configured'>('checking');
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
     const saved = localStorage.getItem('visibleColumns');
     return saved ? JSON.parse(saved) : DEFAULT_VISIBLE_COLUMNS;
@@ -153,6 +154,29 @@ export default function App() {
     );
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    async function checkConnection() {
+      if (!supabase) {
+        setSupabaseStatus('not-configured');
+        return;
+      }
+      try {
+        const { error } = await supabase.from('products').select('id').limit(1);
+        if (error) throw error;
+        setSupabaseStatus('connected');
+      } catch (err: any) {
+        console.error('Supabase Connection Error:', err);
+        if (err.message?.includes('NetworkError') || err.message?.includes('Failed to fetch')) {
+          setSupabaseStatus('error');
+        } else {
+          // Other errors (like 403) still mean we can connect but maybe RLS is blocking
+          setSupabaseStatus('connected');
+        }
+      }
+    }
+    checkConnection();
   }, []);
 
   const handleAuthChange = async (session: Session | null) => {
@@ -612,6 +636,28 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
+      {/* Supabase Status Warning */}
+      {supabaseStatus === 'error' && (
+        <div className="bg-red-50 border-b border-red-100 px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-red-700 text-sm">
+            <AlertTriangle className="w-4 h-4" />
+            <span>无法连接到数据库。请检查网络连接或 Supabase 配置。</span>
+          </div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition-colors"
+          >
+            重试
+          </button>
+        </div>
+      )}
+      {supabaseStatus === 'not-configured' && (
+        <div className="bg-amber-50 border-b border-amber-100 px-4 py-2 flex items-center gap-2 text-amber-700 text-sm">
+          <AlertTriangle className="w-4 h-4" />
+          <span>Supabase 尚未配置。请在 AI Studio 的「Settings」选单中设定 VITE_SUPABASE_URL 和 VITE_SUPABASE_ANON_KEY。</span>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -2101,10 +2147,18 @@ function ProductModal({
         } as Product);
       }
       alert(`产品已成功保存！`);
-      window.location.reload();
+      onClose();
     } catch (error: any) {
       console.error("Submit Error: ", error);
-      const errorMessage = error?.message || (typeof error === 'string' ? error : '未知错误');
+      let errorMessage = error?.message || (typeof error === 'string' ? error : '未知错误');
+      
+      // Handle common Supabase errors
+      if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
+        errorMessage = `数据库架构不匹配：${errorMessage}。请确保已在 Supabase 中运行最新的 SQL 脚本。`;
+      } else if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+        errorMessage = `网络连接错误：请检查您的网络连接或 Supabase 配置。如果您使用了广告拦截插件，请尝试关闭它。`;
+      }
+      
       alert(`提交失败：${errorMessage}\n请检查控制台获取更多详情。`);
     } finally {
       setIsSubmitting(false);
