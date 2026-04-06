@@ -39,27 +39,33 @@ CREATE TABLE IF NOT EXISTS public.products (
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
+-- Security Definer Function to check if user is admin
+-- This avoids infinite recursion in RLS policies
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.user_profiles
+    WHERE id = auth.uid()
+    AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Policies for User Profiles
 CREATE POLICY "Users can view their own profile" ON public.user_profiles
   FOR SELECT USING (auth.uid() = id);
 
 CREATE POLICY "Admins can view all profiles" ON public.user_profiles
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.user_profiles WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  FOR SELECT USING (is_admin());
 
 -- Policies for Products
 CREATE POLICY "Anyone can view products" ON public.products
   FOR SELECT USING (true);
 
 CREATE POLICY "Admins can manage products" ON public.products
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.user_profiles WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  FOR ALL USING (is_admin());
 
 -- Trigger for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
