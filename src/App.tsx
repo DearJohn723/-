@@ -833,8 +833,18 @@ export default function App() {
                           </button>
                         </th>
                       )}
+                      {visibleColumns.includes('description') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">描述</th>}
+                      {visibleColumns.includes('size') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">尺寸</th>}
+                      {visibleColumns.includes('pieces') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">片数</th>}
+                      {visibleColumns.includes('tags') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">标签</th>}
                       {visibleColumns.includes('type') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">类型</th>}
                       {visibleColumns.includes('netWeight') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">净重量</th>}
+                      {visibleColumns.includes('grossWeight') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">带包装盒重量</th>}
+                      {visibleColumns.includes('packagingSize') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">包装盒尺寸</th>}
+                      {visibleColumns.includes('boxQuantity') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">装箱数量（盒）</th>}
+                      {visibleColumns.includes('shippingBoxSize') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">发货外箱尺寸</th>}
+                      {visibleColumns.includes('shippingBoxWeight') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">发货单箱重量（kg）</th>}
+                      {visibleColumns.includes('shippingBoxVolume') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">发货单箱体积（m³）</th>}
                       {visibleColumns.includes('color') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">颜色</th>}
                       {visibleColumns.includes('factoryPrice') && (
                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -849,6 +859,11 @@ export default function App() {
                           </button>
                         </th>
                       )}
+                      {visibleColumns.includes('agentPriceLevel1') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">代理商价格一級</th>}
+                      {visibleColumns.includes('agentPriceLevel2') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">代理商价格二級</th>}
+                      {visibleColumns.includes('agentPriceLevel3') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">代理商价格三級</th>}
+                      {visibleColumns.includes('dropshippingPrice') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">一鍵代發價格</th>}
+                      {visibleColumns.includes('domesticPrice') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">国内售价</th>}
                       {visibleColumns.includes('overseasPrice') && (
                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                           <button 
@@ -865,6 +880,8 @@ export default function App() {
                       {visibleColumns.includes('stock') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">库存</th>}
                       {visibleColumns.includes('totalSales') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">总销量</th>}
                       {visibleColumns.includes('releaseDate') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">上市日期</th>}
+                      {visibleColumns.includes('photos') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">图片链接</th>}
+                      {visibleColumns.includes('videos') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">视频链接</th>}
                       {visibleColumns.includes('createdAt') && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">建立时间</th>}
                       {!isViewer && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10 text-right shadow-[-4px_0_8px_rgba(0,0,0,0.05)]">操作</th>}
                     </tr>
@@ -934,6 +951,32 @@ export default function App() {
                             <span className="text-sm text-gray-600">{product.category}</span>
                           </td>
                         )}
+                        {visibleColumns.includes('description') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600 max-w-xs truncate block" title={product.description}>{product.description || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('size') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.size || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('pieces') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.pieces || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('tags') && (
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-1">
+                              {product.tags.map(tag => (
+                                <span key={tag} className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        )}
                         {visibleColumns.includes('type') && (
                           <td className="px-6 py-4">
                             <span className="text-sm text-gray-600">{product.type || '-'}</span>
@@ -944,6 +987,36 @@ export default function App() {
                             <span className="text-sm text-gray-600">{product.netWeight || '-'}</span>
                           </td>
                         )}
+                        {visibleColumns.includes('grossWeight') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.grossWeight || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('packagingSize') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.packagingSize || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('boxQuantity') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.boxQuantity || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('shippingBoxSize') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.shippingBoxSize || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('shippingBoxWeight') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.shippingBoxWeight || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('shippingBoxVolume') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{product.shippingBoxVolume || '-'}</span>
+                          </td>
+                        )}
                         {visibleColumns.includes('color') && (
                           <td className="px-6 py-4">
                             <span className="text-sm text-gray-600">{product.color || '-'}</span>
@@ -952,6 +1025,31 @@ export default function App() {
                         {visibleColumns.includes('factoryPrice') && (
                           <td className="px-6 py-4">
                             <span className="text-sm font-medium text-gray-900">¥ {product.factoryPrice?.toLocaleString()}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('agentPriceLevel1') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">¥ {product.agentPriceLevel1?.toLocaleString() || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('agentPriceLevel2') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">¥ {product.agentPriceLevel2?.toLocaleString() || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('agentPriceLevel3') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">¥ {product.agentPriceLevel3?.toLocaleString() || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('dropshippingPrice') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">¥ {product.dropshippingPrice?.toLocaleString() || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('domesticPrice') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">¥ {product.domesticPrice?.toLocaleString() || '-'}</span>
                           </td>
                         )}
                         {visibleColumns.includes('overseasPrice') && (
@@ -975,6 +1073,20 @@ export default function App() {
                         {visibleColumns.includes('releaseDate') && (
                           <td className="px-6 py-4">
                             <span className="text-sm text-gray-600">{product.releaseDate || '-'}</span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('photos') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-blue-600 truncate max-w-[150px] block" title={product.photos.join('; ')}>
+                              {product.photos.join('; ') || '-'}
+                            </span>
+                          </td>
+                        )}
+                        {visibleColumns.includes('videos') && (
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-blue-600 truncate max-w-[150px] block" title={product.videos.join('; ')}>
+                              {product.videos.join('; ') || '-'}
+                            </span>
                           </td>
                         )}
                         {visibleColumns.includes('createdAt') && (
@@ -1247,14 +1359,31 @@ const ALL_LIST_COLUMNS = [
   { id: 'subName', label: '子产品名称' },
   { id: 'preview', label: '预览' },
   { id: 'category', label: '分类' },
+  { id: 'description', label: '描述' },
+  { id: 'size', label: '尺寸' },
+  { id: 'pieces', label: '片数' },
+  { id: 'color', label: '颜色' },
+  { id: 'releaseDate', label: '上市日期' },
+  { id: 'tags', label: '标签' },
   { id: 'type', label: '类型' },
   { id: 'netWeight', label: '净重量' },
-  { id: 'color', label: '颜色' },
+  { id: 'grossWeight', label: '带包装盒重量' },
+  { id: 'packagingSize', label: '包装盒尺寸' },
+  { id: 'boxQuantity', label: '装箱数量（盒）' },
+  { id: 'shippingBoxSize', label: '发货外箱尺寸' },
+  { id: 'shippingBoxWeight', label: '发货单箱重量（kg）' },
+  { id: 'shippingBoxVolume', label: '发货单箱体积（m³）' },
   { id: 'factoryPrice', label: '出厂价格' },
+  { id: 'agentPriceLevel1', label: '代理商价格一級' },
+  { id: 'agentPriceLevel2', label: '代理商价格二級' },
+  { id: 'agentPriceLevel3', label: '代理商价格三級' },
+  { id: 'dropshippingPrice', label: '一鍵代發價格' },
+  { id: 'domesticPrice', label: '国内售价' },
   { id: 'overseasPrice', label: '海外售价' },
   { id: 'stock', label: '库存' },
   { id: 'totalSales', label: '总销量' },
-  { id: 'releaseDate', label: '上市日期' },
+  { id: 'photos', label: '图片链接' },
+  { id: 'videos', label: '视频链接' },
   { id: 'createdAt', label: '建立时间' },
 ];
 
