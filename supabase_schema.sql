@@ -51,18 +51,19 @@ ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
 -- Security Definer Function to check if user is admin
--- This avoids infinite recursion in RLS policies
+-- This avoids infinite recursion in RLS policies by running as the owner (postgres)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
+DECLARE
+  current_role TEXT;
 BEGIN
-  RETURN EXISTS (
-    SELECT 1
-    FROM public.user_profiles
-    WHERE id = auth.uid()
-    AND role = 'admin'
-  );
+  SELECT role INTO current_role
+  FROM public.user_profiles
+  WHERE id = auth.uid();
+  
+  RETURN current_role = 'admin';
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Policies for User Profiles
 CREATE POLICY "Users can view their own profile" ON public.user_profiles
@@ -70,6 +71,19 @@ CREATE POLICY "Users can view their own profile" ON public.user_profiles
 
 CREATE POLICY "Admins can view all profiles" ON public.user_profiles
   FOR SELECT USING (is_admin());
+
+CREATE POLICY "Users can insert their own profile" ON public.user_profiles
+  FOR INSERT WITH CHECK (
+    auth.uid() = id AND 
+    (
+      role = 'viewer' OR 
+      is_admin() OR 
+      (auth.jwt() ->> 'email' IN ('john@greatidea.tw', 'wesleytw723@gmail.com'))
+    )
+  );
+
+CREATE POLICY "Admins can manage all profiles" ON public.user_profiles
+  FOR ALL USING (is_admin());
 
 -- Policies for Products
 CREATE POLICY "Anyone can view products" ON public.products

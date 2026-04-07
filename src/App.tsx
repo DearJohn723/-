@@ -271,9 +271,16 @@ export default function App() {
     try {
       const data = await databaseService.getProducts();
       setProducts(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("無法載入商品清單。這通常是因為 Supabase 的 RLS 策略發生了無限遞迴錯誤。請檢查您的資料庫策略。");
+      const msg = err.message || String(err);
+      if (msg.includes('infinite recursion')) {
+        setError("無法載入商品清單：資料庫 RLS 策略發生無限遞迴錯誤。請檢查您的 SQL 策略，確保 is_admin() 函數使用了 SECURITY DEFINER。");
+      } else if (msg.includes('insufficient permissions')) {
+        setError("無法載入商品清單：權限不足。請確保您的帳號已被授權為管理員。");
+      } else {
+        setError(`無法載入商品清單：${msg}`);
+      }
     } finally {
       setIsRefreshing(false);
     }

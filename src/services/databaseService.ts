@@ -218,7 +218,10 @@ export const databaseService = {
       .eq('id', uid)
       .maybeSingle();
     
-    if (error) return null;
+    if (error) {
+      console.error("Supabase getUserProfile Error:", error);
+      return null;
+    }
     if (!data) return null;
     return {
       uid: data.id,
