@@ -265,7 +265,10 @@ export const databaseService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase createUserProfile Error:", error);
+      throw error;
+    }
     return data;
   },
 
@@ -283,7 +286,10 @@ export const databaseService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase updateUserProfile Error:", error);
+      throw error;
+    }
     return data;
   },
 

@@ -1771,7 +1771,7 @@ function UserManagementView() {
     setAddLoading(true);
 
     try {
-      if (!supabase) throw new Error('Supabase not configured');
+      if (!supabase) throw new Error('Supabase 設定不完整或格式錯誤。請確保 VITE_SUPABASE_URL 以 https:// 開頭，且 VITE_SUPABASE_ANON_KEY 已填寫。');
       
       const { data, error } = await supabase.auth.signUp({
         email: newEmail,
@@ -1809,10 +1809,15 @@ function UserManagementView() {
       const updatedUsers = await databaseService.getAllUserProfiles();
       setUsers(updatedUsers);
     } catch (err: any) {
-      let errorMessage = err.message;
-      if (err.message.includes('rate limit exceeded')) {
+      console.error("Add User Error:", err);
+      let errorMessage = err.message || String(err);
+      
+      if (errorMessage.includes('rate limit exceeded')) {
         errorMessage = '新增频率過快（每小時郵件限制已達上限）。請前往 Supabase 後台 Authentication > Settings > Rate Limits 調高 "Max Emails per Hour" 限制。';
+      } else if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+        errorMessage = '網路連線錯誤 (NetworkError)：這通常是因為瀏覽器攔截了請求。請嘗試以下操作：\n1. 點擊右上角圖示「在新分頁中開啟」應用程式再試一次（解決 iFrame 限制問題）。\n2. 關閉廣告攔截器 (如 AdBlock, uBlock Origin)。\n3. 檢查您的 VITE_SUPABASE_URL 是否正確（必須以 https:// 開頭）。';
       }
+      
       setAddError(errorMessage);
     } finally {
       setAddLoading(false);
