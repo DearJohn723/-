@@ -62,6 +62,7 @@ const productSchema = z.object({
   dropshippingPrice: z.number().min(0).optional(),
   domesticPrice: z.number().min(0).optional(),
   overseasPrice: z.number().min(0).optional(),
+  overseasWholesalePrice: z.number().min(0).optional(),
   stock: z.number().int().min(0, '库存不能小于0'),
   size: z.string().optional(),
   netWeight: z.string().optional(),
@@ -1113,6 +1114,14 @@ export default function App() {
                             </div>
                           </td>
                         )}
+                        {visibleColumns.includes('overseasWholesalePrice') && (
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col text-sm">
+                              <span className="text-gray-900">US$ {Math.round(product.overseasWholesalePrice || 0).toLocaleString()}</span>
+                              <span className="text-gray-400 text-[10px]">≈ ¥{(Math.round(product.overseasWholesalePrice || 0) * exchangeRate).toFixed(2)}</span>
+                            </div>
+                          </td>
+                        )}
                         {visibleColumns.includes('stock') && (
                           <td className="px-6 py-4">
                             <span className="text-sm text-gray-600">{product.stock}</span>
@@ -1433,6 +1442,7 @@ const ALL_LIST_COLUMNS = [
   { id: 'dropshippingPrice', label: '一鍵代發價格' },
   { id: 'domesticPrice', label: '国内售价' },
   { id: 'overseasPrice', label: '海外售价' },
+  { id: 'overseasWholesalePrice', label: '海外批發價' },
   { id: 'stock', label: '库存' },
   { id: 'totalSales', label: '总销量' },
   { id: 'photos', label: '图片链接' },
@@ -2081,6 +2091,7 @@ function ProductModal({
       dropshippingPrice: product.dropshippingPrice,
       domesticPrice: product.domesticPrice,
       overseasPrice: product.overseasPrice,
+      overseasWholesalePrice: product.overseasWholesalePrice || 0,
       stock: product.stock,
       size: product.size,
       pieces: product.pieces,
@@ -2108,6 +2119,8 @@ function ProductModal({
       agentPriceLevel2: 0,
       agentPriceLevel3: 0,
       dropshippingPrice: 0,
+      overseasPrice: 0,
+      overseasWholesalePrice: 0,
       monthlySales: [],
       photos: [],
       videos: []
@@ -2141,6 +2154,7 @@ function ProductModal({
         await databaseService.updateProduct(product.id, {
           ...data,
           overseasPrice: Math.round(data.overseasPrice || 0),
+          overseasWholesalePrice: Math.round(data.overseasWholesalePrice || 0),
           tags,
           photos,
           videos,
@@ -2149,6 +2163,7 @@ function ProductModal({
         await databaseService.addProduct({
           ...data,
           overseasPrice: Math.round(data.overseasPrice || 0),
+          overseasWholesalePrice: Math.round(data.overseasWholesalePrice || 0),
           id: crypto.randomUUID(),
           tags,
           photos,
@@ -2539,7 +2554,27 @@ function ProductModal({
                   />
                   <div className="mt-1 text-[10px] text-gray-400">
                     约合人民币: <span className="font-bold text-blue-600">¥{(Math.round(watch('overseasPrice') || 0) * exchangeRate).toFixed(2)}</span>
-                    <span className="ml-2">(当前汇率: {exchangeRate.toFixed(4)})</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">海外批發價 (USD)</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    {...register('overseasWholesalePrice', { 
+                      valueAsNumber: true,
+                      onBlur: (e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) {
+                          setValue('overseasWholesalePrice', Math.round(val));
+                        }
+                      }
+                    })} 
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" 
+                  />
+                  <div className="mt-1 text-[10px] text-gray-400">
+                    约合人民币: <span className="font-bold text-blue-600">¥{(Math.round(watch('overseasWholesalePrice') || 0) * exchangeRate).toFixed(2)}</span>
                   </div>
                 </div>
               </div>

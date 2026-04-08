@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   dropshipping_price NUMERIC DEFAULT 0,
   domestic_price NUMERIC DEFAULT 0,
   overseas_price NUMERIC DEFAULT 0,
+  overseas_wholesale_price NUMERIC DEFAULT 0,
   stock INTEGER DEFAULT 0,
   size TEXT,
   weight TEXT,

@@ -26,6 +26,7 @@ export interface Product {
   dropshippingPrice?: number;
   domesticPrice: number;
   overseasPrice: number;
+  overseasWholesalePrice?: number;
   stock: number;
   size: string;
   netWeight?: string;
