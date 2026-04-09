@@ -1109,16 +1109,16 @@ export default function App() {
                         {visibleColumns.includes('overseasPrice') && (
                           <td className="px-6 py-4">
                             <div className="flex flex-col text-sm">
-                              <span className="text-gray-900">US$ {Math.round(product.overseasPrice || 0).toLocaleString()}</span>
-                              <span className="text-gray-400 text-[10px]">≈ ¥{(Math.round(product.overseasPrice || 0) * exchangeRate).toFixed(2)}</span>
+                              <span className="text-gray-900">US$ {(product.overseasPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                              <span className="text-gray-400 text-[10px]">≈ ¥{((product.overseasPrice || 0) * exchangeRate).toFixed(2)}</span>
                             </div>
                           </td>
                         )}
                         {visibleColumns.includes('overseasWholesalePrice') && (
                           <td className="px-6 py-4">
                             <div className="flex flex-col text-sm">
-                              <span className="text-gray-900">US$ {Math.round(product.overseasWholesalePrice || 0).toLocaleString()}</span>
-                              <span className="text-gray-400 text-[10px]">≈ ¥{(Math.round(product.overseasWholesalePrice || 0) * exchangeRate).toFixed(2)}</span>
+                              <span className="text-gray-900">US$ {(product.overseasWholesalePrice || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                              <span className="text-gray-400 text-[10px]">≈ ¥{((product.overseasWholesalePrice || 0) * exchangeRate).toFixed(2)}</span>
                             </div>
                           </td>
                         )}
@@ -2153,8 +2153,8 @@ function ProductModal({
       if (product && product.id) {
         await databaseService.updateProduct(product.id, {
           ...data,
-          overseasPrice: Math.round(data.overseasPrice || 0),
-          overseasWholesalePrice: Math.round(data.overseasWholesalePrice || 0),
+          overseasPrice: data.overseasPrice || 0,
+          overseasWholesalePrice: data.overseasWholesalePrice || 0,
           tags,
           photos,
           videos,
@@ -2162,8 +2162,8 @@ function ProductModal({
       } else {
         await databaseService.addProduct({
           ...data,
-          overseasPrice: Math.round(data.overseasPrice || 0),
-          overseasWholesalePrice: Math.round(data.overseasWholesalePrice || 0),
+          overseasPrice: data.overseasPrice || 0,
+          overseasWholesalePrice: data.overseasWholesalePrice || 0,
           id: crypto.randomUUID(),
           tags,
           photos,
@@ -2541,19 +2541,14 @@ function ProductModal({
                 <div className="relative">
                   <input 
                     type="number" 
+                    step="0.01"
                     {...register('overseasPrice', { 
-                      valueAsNumber: true,
-                      onBlur: (e) => {
-                        const val = parseFloat(e.target.value);
-                        if (!isNaN(val)) {
-                          setValue('overseasPrice', Math.round(val));
-                        }
-                      }
+                      valueAsNumber: true
                     })} 
                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" 
                   />
                   <div className="mt-1 text-[10px] text-gray-400">
-                    约合人民币: <span className="font-bold text-blue-600">¥{(Math.round(watch('overseasPrice') || 0) * exchangeRate).toFixed(2)}</span>
+                    约合人民币: <span className="font-bold text-blue-600">¥{((watch('overseasPrice') || 0) * exchangeRate).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -2562,19 +2557,14 @@ function ProductModal({
                 <div className="relative">
                   <input 
                     type="number" 
+                    step="0.01"
                     {...register('overseasWholesalePrice', { 
-                      valueAsNumber: true,
-                      onBlur: (e) => {
-                        const val = parseFloat(e.target.value);
-                        if (!isNaN(val)) {
-                          setValue('overseasWholesalePrice', Math.round(val));
-                        }
-                      }
+                      valueAsNumber: true
                     })} 
                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" 
                   />
                   <div className="mt-1 text-[10px] text-gray-400">
-                    约合人民币: <span className="font-bold text-blue-600">¥{(Math.round(watch('overseasWholesalePrice') || 0) * exchangeRate).toFixed(2)}</span>
+                    约合人民币: <span className="font-bold text-blue-600">¥{((watch('overseasWholesalePrice') || 0) * exchangeRate).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
