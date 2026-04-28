@@ -397,8 +397,8 @@ export default function App() {
       if (selectedColumns.includes('海外售价')) row['海外售价'] = p.overseasPrice || 0;
       if (selectedColumns.includes('库存')) row['库存'] = p.stock;
       if (selectedColumns.includes('总销量')) row['总销量'] = calculateTotalSales(p.monthlySales);
-      if (selectedColumns.includes('图片链接') || selectedColumns.includes('圖片連結')) row['图片链接'] = p.photos.join('; ');
-      if (selectedColumns.includes('视频链接') || selectedColumns.includes('視頻連結')) row['视频链接'] = p.videos.join('; ');
+      if (selectedColumns.includes('图片链接') || selectedColumns.includes('圖片連結')) row['图片链接'] = p.photos.map(url => `[${url}]`).join('');
+      if (selectedColumns.includes('视频链接') || selectedColumns.includes('視頻連結')) row['视频链接'] = p.videos.map(url => `[${url}]`).join('');
       if (selectedColumns.includes('建立时间')) {
         const date = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt);
         row['建立时间'] = date.toLocaleString();
@@ -469,8 +469,8 @@ export default function App() {
           if (cell && cell.v && typeof cell.v === 'string') {
             const trimmedValue = cell.v.trim();
             if (trimmedValue.includes('http')) {
-              // Find the first URL in the string
-              const match = trimmedValue.match(/https?:\/\/[^\s;]+/);
+              // Find the first URL in the string, accounting for the new bracket format
+              const match = trimmedValue.match(/https?:\/\/[^\]\s;]+/);
               if (match) {
                 const firstLink = match[0];
                 const viewLink = convertToViewLink(firstLink);
@@ -532,6 +532,19 @@ export default function App() {
                 row[key.trim()] = rawRow[key];
               });
 
+              const extractUrls = (val: string): string[] => {
+                if (!val) return [];
+                if (val.includes('[') && val.includes(']')) {
+                  // Extract content between brackets
+                  const matches = val.match(/\[(.*?)\]/g);
+                  if (matches) {
+                    return matches.map(m => m.slice(1, -1).trim()).filter(Boolean);
+                  }
+                }
+                // Fallback to semicolon or comma separation
+                return val.split(/[;,]/).map(p => p.trim()).filter(Boolean);
+              };
+
               // Map spreadsheet columns to Product object
               const productData: any = {
                 productCode: String(row['产品编号'] || row['產品編號'] || '').trim() || `AUTO-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
@@ -560,8 +573,8 @@ export default function App() {
                 domesticPrice: Number(row['国内售价'] || row['國內售價']) || 0,
                 overseasPrice: Math.round(Number(row['海外售价'] || row['海外售價'] || 0)),
                 stock: Number(row['库存'] || row['庫存']) || 0,
-                photos: row['图片链接'] || row['圖片連結'] ? String(row['图片链接'] || row['圖片連結']).split(';').map((p: string) => p.trim()).filter(Boolean) : [],
-                videos: row['视频链接'] || row['視頻連結'] ? String(row['视频链接'] || row['視頻連結']).split(';').map((v: string) => v.trim()).filter(Boolean) : [],
+                photos: extractUrls(String(row['图片链接'] || row['圖片連結'] || '')),
+                videos: extractUrls(String(row['视频链接'] || row['視頻連結'] || '')),
                 monthlySales: [],
                 createdBy: user?.id || ''
               };
